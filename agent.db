@@ -1,0 +1,57 @@
+record(stringin, "$(Sys)$(Dev)Data:Filename") {
+}
+
+record(stringin, "$(Sys)$(Dev)Data:Filename_ACK") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:Filesize") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:Filesize_ACK") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:Runno") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:Runno_ACK") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:AgentPid") {
+}
+
+record(stringin, "$(Sys)$(Dev)Data:AgentHostname") {
+}
+
+record(stringin, "$(Sys)$(Dev)Data:AgentDir") {
+}
+
+record(ai, "$(Sys)$(Dev)Data:Heartbeat") {
+}
+
+record(mbbi, "$(Sys)$(Dev)ScanStatus") {
+    field("ZRVL", 0)
+    field("ONVL", 1)
+    field("TWVL", 2)
+    field("ZRST", "Idle")
+    field("ONST", "Stage")
+    field("TWST", "Scan")
+}
+
+record(calc, "$(Sys)$(Dev)Data:Watchdog") {
+    field(INPA, "$(Sys)$(Dev)Data:Watchdog")
+    field(CALC, "A+1")
+    field(FLNK, "$(Sys)$(Dev)Data:AgentOnline")
+    field(SCAN, "1 second")
+}
+
+record(ai, "$(Sys)$(Dev)Data:Tolerance") {
+}
+
+
+record(calc, "$(Sys)$(Dev)Data:AgentOnline") {
+    field(INPA, "$(Sys)$(Dev)Data:Watchdog")
+    field(INPB, "$(Sys)$(Dev)Data:Tolerance")
+    field(CALC, "(A<B)?1:0")
+    field(SCAN, "Passive")
+}
+
