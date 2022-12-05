@@ -2,20 +2,20 @@ This is the repository of the EPICS related operations for the data agent of Ger
 
 The detector IOC defines the following PVs which are read/wirtten by the EPICS thread created by the data agent:
 
-- $(Sys)$(Dev)ScanStatus
-- $(Sys)$(Dev)Data:Filename
-- $(Sys)$(Dev)Data:Filename_ACK
-- $(Sys)$(Dev)Data:Filesize
-- $(Sys)$(Dev)Data:Filesize_ACK
-- $(Sys)$(Dev)Data:Runno
-- $(Sys)$(Dev)Data:Runno_ACK
-- $(Sys)$(Dev)Data:AgentPid
-- $(Sys)$(Dev)Data:AgentHostname
-- $(Sys)$(Dev)Data:AgentDir
-- $(Sys)$(Dev)Data:Heartbeat
-- $(Sys)$(Dev)Data:Watchdog
-- $(Sys)$(Dev)Data:Tolerance
-- $(Sys)$(Dev)Data:AgentOnline
+- `$(Sys)$(Dev)ScanStatus`
+- `$(Sys)$(Dev)Data:Filename`
+- `$(Sys)$(Dev)Data:Filename_ACK`
+- `$(Sys)$(Dev)Data:Filesize`
+- `$(Sys)$(Dev)Data:Filesize_ACK`
+- `$(Sys)$(Dev)Data:Runno`
+- `$(Sys)$(Dev)Data:Runno_ACK`
+- `$(Sys)$(Dev)Data:AgentPid`
+- `$(Sys)$(Dev)Data:AgentHostname`
+- `$(Sys)$(Dev)Data:AgentDir`
+- `$(Sys)$(Dev)Data:Heartbeat`
+- `$(Sys)$(Dev)Data:Watchdog`
+- `$(Sys)$(Dev)Data:Tolerance`
+- `$(Sys)$(Dev)Data:AgentOnline`
 
 Usage:
 
