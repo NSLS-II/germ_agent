@@ -1,14 +1,31 @@
-CC=gcc
-CFLAGS=-I. -I/usr/lib/epics/include -I/usr/lib/epics/include/os/Linux -I/usr/lib/epics/include/compiler/gcc
+# Makefile at top of application tree
+TOP = .
+include $(TOP)/configure/CONFIG
 
-LDIR=/usr/lib/epics/lib/linux-x86_64
-LIBS=-lca -lezca
+# Directories to build, any order
+DIRS += configure
+DIRS += $(wildcard *Sup)
+DIRS += $(wildcard *App)
+DIRS += $(wildcard *Top)
+DIRS += $(wildcard iocBoot)
 
-DEPS=epics.h
-OBJ=agent.o epics.o
+# The build order is controlled by these dependency rules:
 
-%o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+# All dirs except configure depend on configure
+$(foreach dir, $(filter-out configure, $(DIRS)), \
+    $(eval $(dir)_DEPEND_DIRS += configure))
 
-agent: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) -L$(LDIR) $(LIBS) -pthread
+# Any *App dirs depend on all *Sup dirs
+$(foreach dir, $(filter %App, $(DIRS)), \
+    $(eval $(dir)_DEPEND_DIRS += $(filter %Sup, $(DIRS))))
+
+# Any *Top dirs depend on all *Sup and *App dirs
+$(foreach dir, $(filter %Top, $(DIRS)), \
+    $(eval $(dir)_DEPEND_DIRS += $(filter %Sup %App, $(DIRS))))
+
+# iocBoot depends on all *App dirs
+iocBoot_DEPEND_DIRS += $(filter %App,$(DIRS))
+
+# Add any additional dependency rules here:
+
+include $(TOP)/configure/RULES_TOP

@@ -1,0 +1,73 @@
+#-------------------------------------------
+
+record(bi, "$(Sys)$(Dev)TSEN_PROC") {
+    field(ZNAM, "Idle")
+    field(ONAM, "Process")
+}
+
+record(bi, "$(Sys)$(Dev)CHEN_PROC") {
+    field(ZNAM, "Idle")
+    field(ONAM, "Process")
+}
+
+record(mbbi, "$(Sys)$(Dev)TSEN_CTRL") {
+    field("ZRVL", 0)
+    field("ONVL", 1)
+    field("TWVL", 2)
+    field("THVL", 3)
+    field("ZRST", "Enable")
+    field("ONST", "Enable All")
+    field("TWST", "Disable")
+    field("THST", "Disable All")
+}
+
+record(mbbi, "$(Sys)$(Dev)CHEN_CTRL") {
+    field("ZRVL", 0)
+    field("ONVL", 1)
+    field("TWVL", 2)
+    field("THVL", 3)
+    field("ZRST", "Enable")
+    field("ONST", "Enable All")
+    field("TWST", "Disable")
+    field("THST", "Disable All")
+}
+
+record(waveform, "$(Sys)$(Dev)TSEN") {
+    field(NELM, 384)
+    field(FTVL, UCHAR)
+}
+
+record(waveform, "$(Sys)$(Dev)CHEN") {
+    field(NELM, 384)
+    field(FTVL, UCHAR)
+}
+
+#-------------------------------------------
+
+record(longin, "$(Sys)$(Dev)MONCH") {
+}
+
+record(longin, "$(Sys)$(Dev)NELM") {
+}
+
+#-------------------------------------------
+
+record(calc, "$(Sys)$(Dev)TEST:WATCHDOG") {
+    field(INPA, "$(Sys)$(Dev)TEST:WATCHDOG")
+    field(CALC, "A+1")
+    field(FLNK, "$(Sys)$(Dev)TEST:ONLINE")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(Sys)$(Dev)TEST:TOLERANCE") {
+}
+
+
+record(calc, "$(Sys)$(Dev)TEST:ONLINE") {
+    field(INPA, "$(Sys)$(Dev)TEST:WATCHDOG")
+    field(INPB, "$(Sys)$(Dev)TEST:TOLERANCE")
+    field(CALC, "(A<B)?1:0")
+    field(SCAN, "Passive")
+}
+
+#-------------------------------------------
