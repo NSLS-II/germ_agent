@@ -1,5 +1,5 @@
-#ifndef __GIGE_H_INCLUDED__
-#define __GIGE_H_INCLUDED__
+#ifndef _UDP_CONN_H_
+#define _UDP_CONN_H_
 
 #include <sys/socket.h>
 #include <errno.h>
@@ -70,13 +70,16 @@ int gige_reg_write(gige_reg_t *reg, uint32_t addr, uint32_t value);
 
 gige_data_t *gige_data_init(uint16_t reb_id, char *iface);
 void gige_data_close(gige_reg_t *dat);
-uint64_t gige_data_recv(gige_data_t* dat, uint16_t *data);
+//uint64_t gige_data_recv(gige_data_t* dat, uint16_t *data);
+uint64_t gige_data_recv(gige_data_t* dat, frame_buff_t* buff_p);
 double gige_get_bitrate(gige_data_t *dat);
 int gige_get_n_pixels(gige_data_t *dat);
+
+void* udp_conn_thread(void* arg);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif  //  __GIGE_H_INCLUDED__
+#endif
