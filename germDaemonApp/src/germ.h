@@ -94,7 +94,8 @@
 
 //###########################################################
 
-#define NUM_FRAME_BUFF  2
+#define NUM_FRAME_BUFF   2
+#define NUM_PACKET_BUFF  8
 
 typedef struct
 {
@@ -104,6 +105,15 @@ typedef struct
     uint64_t         num_words;
     uint16_t         evtdata[500000000];
 } frame_buff_t;
+
+typedef struct
+{
+    pthread_mutex_t  lock;
+--    uint32_t         frame_num;
+--    uint16_t         num_lost_event;
+    uint16_t        length;
+    uint8_t         packet[1024];
+} packet_buff_t;
 
 typedef struct
 {

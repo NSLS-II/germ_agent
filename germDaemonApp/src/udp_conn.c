@@ -8,6 +8,11 @@
  * 
  * Revisions:
  *
+ *   v1.1
+ *     - Author: Ji Li
+ *     - Date  : Oct 2023
+ *     - Passing single packets instead of frames
+ *
  *   v1.0
  *     - Author: Ji Li
  *     - Date  : Dec 2022
@@ -43,7 +48,8 @@
 //event data buffer for a frame
 //uint16_t evtdata[500000000];
 //uint32_t evtdata[20000000];
-frame_buff_t frame_buff[NUM_FRAME_BUFF];
+//frame_buff_t frame_buff[NUM_FRAME_BUFF];
+packet_buff_t packet_buff[NUM_PACKET_BUFF];
 
 // indicate which bufferto write/read
 unsigned char write_buff;
@@ -387,6 +393,28 @@ void gige_data_close(gige_reg_t *dat)
 }
 
 
+
+uint8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
+{
+    struct sockaddr_in cliaddr;
+    struct timeval tv_begin, tv_end;
+    socklen_t len;
+    
+    data = buff_p->packet;
+
+	buff_p->length = recvfrom( dat->sock, data, MAX_PACKET_LENGTH, 0,
+                               (struct sockaddr *)&cliaddr, &len);
+	        
+    if ( buff_p->length < 0 )
+    {
+        perror(__func__);
+		return -1;
+    }
+        
+	return 0;
+}
+
+/*
 //=======================================================
 uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
 {
@@ -427,14 +455,14 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
             return n;
         }
 
-        /* first word always packet count */
+        // first word always packet count
         packet_counter = (ntohs(mesg[0]) << 16 | ntohs(mesg[1])); 
 
 		sod      = 4;
 		misc_len = 4;
 
-        /* Second word is padding */
-        /* if third word is 0xFEEDFACE, this is first packet of new frame */
+        // Second word is padding
+        // if third word is 0xFEEDFACE, this is first packet of new frame
         if (ntohs(mesg[4]) == SOF_MARKER_UPPER &&
             ntohs(mesg[5]) == SOF_MARKER_LOWER)
 		{
@@ -466,7 +494,7 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
 		else
 		{
 
-            /* if last word is 0xDECAFBAD, this is end of frame */
+            // if last word is 0xDECAFBAD, this is end of frame
             if (ntohs(mesg[(n/sizeof(uint16_t))-2]) == EOF_MARKER_UPPER &&
                 ntohs(mesg[(n/sizeof(uint16_t))-1]) == EOF_MARKER_LOWER)
             {
@@ -479,16 +507,16 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
             }
 		}
 
-        /* append packet data to frame data */
+        // append packet data to frame data
         //memcpy( &data[total_data/sizeof(uint16_t)],
 		//        &mesg[src],
 		//	n-(dest*sizeof(uint16_t)));
-        //total_data += n-(dest*sizeof(uint16_t)); /* index into full frame data */
+        //total_data += n-(dest*sizeof(uint16_t)); // index into full frame data
         payload_len = n - (misc_len*sizeof(uint16_t));
         memcpy( &data[total_data/sizeof(uint16_t)],
 				&mesg[sod],
 				payload_len);
-        total_data += payload_len; /* index into full frame data */
+        total_data += payload_len; // index into full frame data
         cnt++;
         log("%u bytes in payload of  packet %u\n", payload_len, packet_counter);
     }
@@ -539,7 +567,7 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
     buff_p->num_words = total_data/sizeof(uint16_t);
     return total_data/sizeof(uint16_t);   //return number of 16 bit words  
 }
-
+*/
 
 //=======================================================
 double gige_get_bitrate(gige_data_t *dat)
@@ -561,7 +589,7 @@ void* udp_conn_thread(void* arg)
     int rc = 0;
     uint32_t value;
 
-    frame_buff_t * buff_p;
+    packet_buff_t * buff_p;
 
     struct timespec t1, t2;
 
@@ -604,9 +632,9 @@ void* udp_conn_thread(void* arg)
         err("Read value 0x%x from register 1 doesn't equal to written value 0x%x.\n", value, reg1_val);
     }
 
-    for(int i=0; i<NUM_FRAME_BUFF; i++)
+    for(int i=0; i<NUM_PACKET_BUFF; i++)
     {
-        if (pthread_mutex_init(&frame_buff[i].lock, NULL) != 0)
+        if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
         {
             log("\nmutex init failed!\n");
             pthread_exit(NULL);
@@ -617,24 +645,31 @@ void* udp_conn_thread(void* arg)
 
     dat = gige_data_init(150, NULL);
 
+    buff_p = &packet_buff[write_buff];
+    pthread_mutex_lock(&buff_p->lock);
+    log("buff[%d] locked for writing\n", read_buff);
+
 //    log("receiving Data...\n"); 
     while (1)
     { 
-        buff_p = &frame_buff[write_buff];
-        pthread_mutex_lock(&buff_p->lock);
-        log("buff[%d] locked for writing\n", read_buff);
+        if (gige_data_recv(dat, buff_p) == 1)
+        {
+            pthread_mutex_unlock(&buff_p->lock);
+            log("buff[%d] released\n", write_buff);
 
-        //buff_p->num_words = gige_data_recv(dat, buff_p->evtdata);
-        gige_data_recv(dat, buff_p);
+            write_buff++;
+            write_buff %= NUM_PACKET_BUFF;
 
-        /* Just write. Let the reader detect overflow. */
-        read_buff = write_buff;
+            buff_p = &frame_buff[write_buff];
+            pthread_mutex_lock(&buff_p->lock);
+            log("buff[%d] locked for writing\n", write_buff);
+        }
+		else
+		{
+		    // Error in Rx, continue to use the current buff
+		    continue;  
+		}
 
-        pthread_mutex_unlock(&buff_p->lock);
-
-        log("buff[%d] released\n", write_buff);
-        write_buff++;
-        write_buff %= NUM_FRAME_BUFF;
     }
 
     gige_reg_close(reg);
