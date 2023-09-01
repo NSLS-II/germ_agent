@@ -8,7 +8,7 @@
 #include <cadef.h>
 
 #define RETRY_ON_FAILURE  5
-
+#define MAX_FILENAME_LEN  64
 #define PREFIX_CFG_FILE  "prefix.cfg"
 
 
@@ -64,7 +64,9 @@
 //===========================================================
 
 #define MAX_PV_NAME_LEN       64
-#define MAX_NELM             384
+//#define MAX_NELM             384
+#define MAX_NELM             192
+//#define MAX_NELM              96
 
 #define NUM_PVS               26
 
@@ -98,9 +100,9 @@ typedef struct
 {
     pthread_mutex_t  lock;
     uint32_t         frame_num;
-    uint32_t         num_words;
-    uint16_t         evtdata[500000000];
     uint16_t         num_lost_event;
+    uint64_t         num_words;
+    uint16_t         evtdata[500000000];
 } frame_buff_t;
 
 typedef struct
@@ -116,10 +118,10 @@ typedef struct
 //###########################################################
 
 // mca/tdc dimensions
-#define NUM_MCA_ROW   384
-#define NUM_MCA_COL  4096
-#define NUM_TDC_ROW   384
-#define NUM_TDC_COL  1024
+#define NUM_MCA_ROW   MAX_NELM
+#define NUM_MCA_COL       4096
+#define NUM_TDC_ROW   MAX_NELM
+#define NUM_TDC_COL       1024
 
 //===========================================================
 

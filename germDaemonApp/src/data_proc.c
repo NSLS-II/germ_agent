@@ -46,16 +46,17 @@
 #include "germ.h"
 //#include "udp.h"
 #include "data_proc.h"
+#include "log.h"
 
 
 extern frame_buff_t frame_buff[NUM_FRAME_BUFF];
     
 extern pv_obj_t pv[NUM_PVS];
 
-extern char         datafile_run[64];
-extern char         spectrafile_run[64];
-extern char         datafile[64];
-extern char         spectrafile[64];
+extern char         datafile_run[MAX_FILENAME_LEN];
+extern char         spectrafile_run[MAX_FILENAME_LEN];
+extern char         datafile[MAX_FILENAME_LEN];
+extern char         spectrafile[MAX_FILENAME_LEN];
 
 extern unsigned int runno;
 extern uint16_t     filesize;  // in Megabyte
@@ -80,7 +81,8 @@ void write_data_file( unsigned int segno,
     struct timeval tv_begin, tv_end;
     FILE*          fp;
 
-    sprintf(seg, ".%010d.bin", segno);
+    sprintf(seg, ".%05d.bin", segno);
+    log("segno is %d, seg is %s\n", segno, seg);
     strcpy(datafile, datafile_run);
     memcpy(datafile+strlen(datafile), seg, strlen(seg));
 
@@ -89,7 +91,7 @@ void write_data_file( unsigned int segno,
     fp = fopen(datafile, "a");
     if(NULL == fp)
     {
-        printf("[%s:] ERROR!!! Failed to open file %s.\n", __func__, datafile);
+        log("ERROR!!! Failed to open file %s\n", datafile);
         return;
     }
 
@@ -97,8 +99,7 @@ void write_data_file( unsigned int segno,
     fwrite(src, num_words, sizeof(uint16_t), fp);
     gettimeofday(&tv_end, NULL);
 
-    printf( "[%s:] wrote %4.2f MB to data file %s in %f sec.\n\n",
-            __func__,
+    log("wrote %6.2f MB to data file %s in %f sec\n",
             num_words*2/1e6,
             datafile,
             (float)(time_elapsed(tv_begin, tv_end)/1e6) );
@@ -111,37 +112,37 @@ void write_data_file( unsigned int segno,
 void* data_proc_thread(void* arg)
 {
     frame_buff_t * buff_p;
-    uint16_t *       evtdata_p;
+    uint16_t     * evtdata_p;
 
     /* arrays for energy and time spectra */
     //unsigned int mca[384][4096];
     //unsigned int tdc[384][1024];
     //int evnt;
     //
-    unsigned int num_words;
+    unsigned long int num_words;
 
-    unsigned char chkerr;
-    int checkval;
+//    unsigned char chkerr;
+//    int checkval;
 
 //    char         fn[1024];
 //    char         run[64];
     unsigned int prev_runno    = 0;
     unsigned int segno         = 0;  // file segment number, always start from 0 for a new run
-    uint64_t     words_to_full = 0;  // how many words to write to the file to reach filesize
-    uint64_t     words_written = 0;  // how many words already written to the file
+    static uint64_t     words_to_full = 0;  // how many words to write to the file to reach filesize
+    static uint64_t     words_written = 0;  // how many words already written to the file
     
-    unsigned long next_frame = 0;
+    static unsigned long next_frame = 0;
 
     uint32_t event, et_event;
     uint32_t adr, de, dt;
 
-    unsigned int i, j;
+    unsigned long int i, j;
     FILE * fp;
 
     struct timespec t1, t2;
 
-    printf("#####################################################\n");
-    printf("[%s]: Initializing data_proc_thread...\n", __func__);
+    log("#####################################################\n");
+    log("Initializing data_proc_thread...\n");
 
     SEVCHK(ca_context_create(ca_disable_preemptive_callback),"ca_context_create @data_proc_thread");
 
@@ -157,8 +158,8 @@ void* data_proc_thread(void* arg)
 
     while(1)
     {
-        chkerr   = 0;
-        checkval = 0;
+//        chkerr   = 0;
+//        checkval = 0;
         memset(mca, 0, sizeof(mca));
         memset(tdc, 0, sizeof(tdc));
 //        memset(fn,  0, sizeof(fn));
@@ -166,11 +167,11 @@ void* data_proc_thread(void* arg)
 
         buff_p = &frame_buff[read_buff];
         pthread_mutex_lock(&(buff_p->lock));
-        printf("[%s]: buff[%d] locked for reading\n", __func__, read_buff);
+        log("buff[%d] locked for reading\n", read_buff);
       
         if (buff_p->frame_num != next_frame)
         {
-            printf( "[%s:] %ld buffer(s) dropped.\n",
+            log( "[%s:] %ld frame(s) dropped.\n",
                     __func__,
                     buff_p->frame_num-next_frame);
         }
@@ -179,19 +180,18 @@ void* data_proc_thread(void* arg)
         num_words  = buff_p->num_words;
         evtdata_p  = buff_p->evtdata;
 
-        printf("[%s:] %d words in frame.\n",  __func__, num_words);
-        printf("[%s:] %d events in frame.\n", __func__, (num_words-8)/4);
+        log("%lu words / %lu events in frame.\n", num_words, (num_words-8)/4);
 
         /*
         //--------------------------------------------------------------------------
         //check data
-        printf("[%s:] checking data...\n", __func__);
+        log("checking data...\n");
         for(i=0; i<num_words; i=i+2)
         {
             //last 4 16bit words are fifofullcnt and EOF
             //printf("%d:\t%4x\n",i,ntohs(evtdata_p[i]));
             if (i == 0) {
-                printf( "[%s:] SOF = 0x%x\n",
+                log( "[%s:] SOF = 0x%x\n",
             __func__,
                   (ntohs(evtdata_p[i]) << 16 | ntohs(evtdata_p[i+1])) );
                 checkval = 0;
@@ -200,8 +200,7 @@ void* data_proc_thread(void* arg)
             {
                 if (i == 2)
                 {
-                          printf( "[%s:] FrameNum = %d\n",
-                            __func__,
+                          log("FrameNum = %d\n",
                             (ntohs(evtdata_p[i]) << 16 | ntohs(evtdata_p[i+1])) );
                           checkval = 0;
                 }
@@ -209,7 +208,7 @@ void* data_proc_thread(void* arg)
                 {
                     if (checkval != (ntohs(evtdata_p[i]) << 16 | ntohs(evtdata_p[i+1])))
                     {
-                        printf( "[%s:] error at i = %d\tval = 0x%x\t should be 0x%x\n",
+                        log("error at i = %d\tval = 0x%x\t should be 0x%x\n",
                           __func__,
                           i,
                           (ntohs(evtdata_p[i]) << 16 | ntohs(evtdata_p[i+1])),
@@ -223,21 +222,21 @@ void* data_proc_thread(void* arg)
             }
         }
 
-        printf( "[%s:] events lost to Overflow: %d\n",
+        log("events lost to Overflow: %d\n",
                 __func__,
                 (ntohs(evtdata_p[num_words-4]) << 16 | ntohs(evtdata_p[num_words-3])) );
 
-        printf( "[%s:] EOF: 0x%x\n",
+        log("EOF: 0x%x\n",
                 __func__,
           (ntohs(evtdata_p[num_words-2]) << 16 | ntohs(evtdata_p[num_words-1])));
 
         if (chkerr == 0)
-            printf("[%s:] checking complete. No errors.)\n", __func__);
-        printf("[%s:] events %i\n", __func__, evnt);
+            log("checking complete. No errors.)\n");
+        log("events %i\n", evnt);
   */
 
 
-        printf("[%s:] saving files...\n", __func__);
+        log("saving files...\n");
         //--------------------------------------------------------------------------
         // Write event data file.
         // File size limited by filesize
@@ -248,12 +247,17 @@ void* data_proc_thread(void* arg)
         //strncat(fn, run, strlen(run));
         //memcpy(fn+strlen(fn), run, strlen(run));
 
+        log("%ld words in buffer.\n", num_words);
+        segno = 0;
+        write_data_file(segno, evtdata_p, num_words);
+        log("datafile (new run) written\n"); 
+/*
         if (prev_runno != runno) // starting a new run
         {
             segno = 0;
       
             write_data_file(segno, evtdata_p, num_words);
-                  
+            log("datafile (new run) written\n"); 
             prev_runno = runno;
             words_to_full = (filesize << 5) - num_words;  // filesize in MB
             words_written = num_words;
@@ -268,12 +272,16 @@ void* data_proc_thread(void* arg)
             if (words_to_full > num_words)
             {
                 write_data_file(segno, evtdata_p, num_words);
+                log("datafile of run %d seg %d written\n", runno, segno);
+                log("1\n");
                 words_to_full -= num_words;
             }
             else
             {
                 // fill the current segment/file
                 write_data_file(segno, evtdata_p, words_to_full);
+                log("datafile of run %d seg %d written\n", runno, segno);
+                log("2\n");
             
                 segno++;
             
@@ -286,12 +294,14 @@ void* data_proc_thread(void* arg)
                 {
                     // write the rest of the data to the next segment/file
                     write_data_file(segno, evtdata_p+num_words-words_to_full, num_words-words_to_full);
+                    log("datafile of run %d seg %d written\n", runno, segno);
+                log("3\n");
                     words_written = num_words - words_to_full;
                     words_to_full = (filesize << 5) - words_written;
                 }
             }
         }
-
+*/
 
         //--------------------------------------------------------------------------
         // Calculate spectra
@@ -307,8 +317,10 @@ void* data_proc_thread(void* arg)
                 adr = (event >> 22) & 0x1ff;
                 dt  = (event >> 12) & 0x3ff;
                 de  = (event >> 0)  & 0xfff;
-                if(adr >= 384)
-                    adr = 383;
+                //if(adr >= 384)
+                //    adr = 383;
+                if(adr >= MAX_NELM)
+                    adr = MAX_NELM-1;
                 if(dt >= 1024)
                     dt=1023;
                 if(de >= 4096)
@@ -337,14 +349,15 @@ void* data_proc_thread(void* arg)
 
         fp = fopen(spectrafile, "a");
         if(fp != NULL)
-            printf("[%s:] spectra file %s opened OK\n.", __func__, spectrafile);
+            log("spectra file %s opened OK\n", spectrafile);
 
         fprintf(fp, "\t#name: spect\n");
         fprintf(fp, "\t#type: matrix\n");
-        fprintf(fp, "\t#rows: 384\n");
+        fprintf(fp, "\t#rows: %d\n", MAX_NELM);
         fprintf(fp, "\t#columns: 4096\n");
 
-        for(i=0; i<384; i++)
+        //for(i=0; i<384; i++)
+        for(i=0; i<MAX_NELM; i++)
         {
             for(j=0;j<4096;j++)
             {
@@ -356,10 +369,11 @@ void* data_proc_thread(void* arg)
         
         fprintf(fp, "\t#name: tot\n");
         fprintf(fp, "\t#type: matrix\n");
-        fprintf(fp, "\t#rows: 384\n");
+        fprintf(fp, "\t#rows: %d\n", MAX_NELM);
         fprintf(fp, "\t#columns: 1024\n");
 
-        for(i=0; i<384; i++)
+        //for(i=0; i<384; i++)
+        for(i=0; i<MAX_NELM; i++)
         {
             for(j=0; j<1024; j++)
             {
@@ -369,10 +383,13 @@ void* data_proc_thread(void* arg)
         }
         fprintf(fp,"\n");
 
-        printf("[%s:] spectra file %s written OK\n", __func__, spectrafile);
+        log("spectra file %s written OK\n", spectrafile);
         fclose(fp);
 
         pthread_mutex_unlock(&(buff_p->lock));
-        printf("[%s]: buff[%d] released\n", __func__, read_buff);
+        log("buff[%d] released\n", read_buff);
+		
+        read_buff++;
+        read_buff %= NUM_FRAME_BUFF;
     }
 }

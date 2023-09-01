@@ -42,6 +42,7 @@
 #include "data_proc.h"
 #include "exp_mon.h"
 //#include "test.h"
+#include "log.h"
 
 
 //event data buffer for a frame
@@ -72,11 +73,11 @@ char ca_dtype[7][11] = { "DBR_STRING",
 uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 
-char          filename[32];
-char          datafile_run[64];
-char          spectrafile_run[64];
-char          datafile[64];
-char          spectrafile[64];
+char          filename[MAX_FILENAME_LEN];
+char          datafile_run[MAX_FILENAME_LEN];
+char          spectrafile_run[MAX_FILENAME_LEN];
+char          datafile[MAX_FILENAME_LEN];
+char          spectrafile[MAX_FILENAME_LEN];
 unsigned long filesize = 0;
 unsigned long runno = 0;
 
@@ -112,7 +113,7 @@ void create_channel(const char * thread, unsigned int first_pv, unsigned int las
     int status;
     for (int i=first_pv; i<=last_pv; i++)
     {   
-        printf("[%s]: creating CA channel for %s...\n", thread, pv[i].my_name);
+        log("creating CA channel for %s...\n", thread, pv[i].my_name);
         status = ca_create_channel(pv[i].my_name, NULL, NULL, 0, &pv[i].my_chid);
         SEVCHK(status, "Create channel failed");
         status = ca_pend_io(1.0);
@@ -141,13 +142,13 @@ int pv_array_init(void)
     fp = fopen(PREFIX_CFG_FILE, "r");
     if(NULL == fp) 
     {   
-        printf("[%s]: ERROR! Failed to open %s\n", __func__, PREFIX_CFG_FILE);
+        err("ERROR!!! Failed to open %s\n", PREFIX_CFG_FILE);
         return -1;
     }   
 
     if(1 != fscanf(fp, "%s", prefix))
     {
-        printf( "[%s]: ERROR! Incorrect data in %s. Make sure it contains prefix only.\n",
+        err("ERROR!!! Incorrect data in %s. Make sure it contains prefix only.\n",
                 __func__,
                 PREFIX_CFG_FILE );
         fclose(fp);
@@ -157,7 +158,7 @@ int pv_array_init(void)
     prefix_len = strlen(prefix);
     if(0 == prefix_len)
     {   
-        printf( "[%s]: ERROR! Incorrect data in %s. Make sure it contains prefix only.\n",
+        err("ERROR!!! Incorrect data in %s. Make sure it contains prefix only.\n",
                 __func__,
                 PREFIX_CFG_FILE );
         fclose(fp);
@@ -166,7 +167,7 @@ int pv_array_init(void)
 
     fclose(fp);
 
-    printf("[%s]: prefix is %s\n", __func__, prefix);
+    log("prefix is %s\n", prefix);
 
 
 
@@ -340,11 +341,11 @@ int main(int argc, char* argv[])
         {
             case 't':
 //                test_en = 1;
-                printf("[%s]: test mode enabled.\n", __func__);
+                log("test mode enabled.\n");
                 break;
             case 'd':
                 reg1_val = 0x3;
-                printf("[%s]: start in test mode. FPGA will send test data.\n", __func__);
+                log("start in test mode. FPGA will send test data.\n");
                 break;
             case 'h':
                 printf("Usage:\n");
@@ -359,13 +360,13 @@ int main(int argc, char* argv[])
 
     //-----------------------------------------------------------
 
-    printf("[%s]: starting Germanium Daemon...\n", __func__);
+    log("starting Germanium Daemon...\n");
 
     memset(mca, 0, sizeof(mca));
     memset(tdc, 0, sizeof(tdc));
-    memset(filename, 0, sizeof(filename));
-    memset(datafile, 0, sizeof(datafile));
-    memset(spectrafile, 0, sizeof(datafile));
+    //memset(filename, 0, sizeof(filename));
+    //memset(datafile, 0, sizeof(datafile));
+    //memset(spectrafile, 0, sizeof(datafile));
     memset(gige_ip_addr, 0, sizeof(gige_ip_addr));
     memset(hostname, 0, sizeof(hostname));
     memset(directory, 0, sizeof(directory));
@@ -373,10 +374,10 @@ int main(int argc, char* argv[])
     t1.tv_sec  = 1;
     t1.tv_nsec = 0;
 
-    printf("[%s]: initializing PV objects...\n", __func__);
+    log("initializing PV objects...\n");
     if(0 != pv_array_init())
     {
-        printf("[%s]: failed to initialize PV objects.\n", __func__);
+        log("failed to initialize PV objects.\n");
         return -1;
     }
 
@@ -394,20 +395,20 @@ int main(int argc, char* argv[])
     status = gethostname(hostname, 32);
     if (0 != status)
     {
-        printf("[%s]: ERROR (%d)! gethostname() error. Exit the thread.\n", __func__, errno);
+        err("ERROR (%d)! gethostname() error. Exit the thread.\n", errno);
         return -1;
     }
-    printf("[%s]: hostname is %s\n", __func__, hostname);
+    log("hostname is %s\n", hostname);
 
     if (NULL == getcwd(directory, sizeof(directory)))
     {
-        printf("[%s]: ERROR (%d)! getcwd() error", __func__, errno);
+        err("ERROR (%d)! getcwd() error", errno);
         return -1;
     }
-    printf("[%s]: current working dir is %s\n", __func__, directory);
+    log("current working dir is %s\n", directory);
 
     pid = getpid();
-    printf("[%s]: pid is %ld\n", __func__, pid);
+    log("pid is %ld\n", pid);
 
     for (int i=FIRST_ENV_PV; i<=LAST_ENV_PV; i++)
     {   
@@ -420,55 +421,55 @@ int main(int argc, char* argv[])
 
     // Create exp_mon_thread to receive configuration
     // information from IOCs and report status.
-    printf("[%s]: creating exp_mon...\n", __func__);
+    log("creating exp_mon...\n");
     while(1)
     {
         status = pthread_create(&tid[0], NULL, &exp_mon_thread, NULL);
         if ( 0 == status)
         {
-            printf("[%s]: exp_mon created.\n", __func__);
+            log("exp_mon created.\n");
             break;
         }
 
-        printf( "[%s]: ERROR!!! Can't create exp_mon: [%s]\n",
+        err("ERROR!!! Can't create exp_mon: [%s]\n",
     	        __func__,
 		strerror(status));
     }
 
     // Create udp_conn_thread to configure FPGA and receive data through
     // UDP connection.
-    printf("[%s]: creating udp_conn_thread...\n", __func__);
+    log("creating udp_conn_thread...\n");
     while(1)
     {
         status = pthread_create(&tid[1], NULL, &udp_conn_thread, NULL);
         if ( 0 == status)
         {
-            printf("[%s]: udp_conn_thread created.\n", __func__);
+            log("udp_conn_thread created.\n");
             break;
         }
 
-        printf( "[%s]: ERROR!!! Can't create udp_conn_thread: [%s]\n",
+        err("ERROR!!! Can't create udp_conn_thread: [%s]\n",
 	            __func__,
 		strerror(status));
     }
 
     // Create data_proc_thread to process data and save files.
-    printf("[%s]: creating data_proc_thread...\n", __func__);
+    log("creating data_proc_thread...\n");
     while(1)
     {
         status = pthread_create(&tid[2], NULL, &data_proc_thread, NULL);
         if ( 0 == status)
         {
-            printf("[%s]: data_proc_thread created.\n", __func__);
+            log("data_proc_thread created.\n");
             break;
         }
 
-        printf( "[%s]: ERROR!!! Can't create data_proc_thread: [%s]\n",
+        err("ERROR!!! Can't create data_proc_thread: [%s]\n",
 	            __func__,
 		strerror(status));
     }
 
-    printf("[%s]: finished initialization.\n", __func__);
+    log("finished initialization.\n");
 
     //-----------------------------------------------------------
     // Feed the watchdog.

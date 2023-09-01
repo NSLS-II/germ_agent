@@ -1,0 +1,5 @@
+NAME=germ_agent
+USER=softioc
+PORT=7001
+HOST=detector
+

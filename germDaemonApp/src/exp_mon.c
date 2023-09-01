@@ -13,11 +13,12 @@
 #include "germ.h"
 //#include "udp.h"
 #include "exp_mon.h"
+#include "log.h"
 
 extern unsigned char count;
-extern char          filename[32];
-extern char          datafile_run[64];
-extern char          spectrafile_run[64];
+extern char          filename[MAX_FILENAME_LEN];
+extern char          datafile_run[MAX_FILENAME_LEN];
+extern char          spectrafile_run[MAX_FILENAME_LEN];
 extern unsigned long filesize;
 extern unsigned long runno;
 
@@ -37,24 +38,27 @@ extern char gige_ip_addr[16];
 // data_proc_thread will append segno to funfile as the data file name
 // used to save detector data.
 //------------------------------------------------------------------------
-void filename_gen(void)
+void file_name_gen(void)
 {
     char run[32];
     char spectra[32];
+
+    log("filename is %s, runno is %u\n", filename, runno);
 
     memset(datafile_run, 0, sizeof(datafile_run));
     memset(spectrafile_run, 0, sizeof(spectrafile_run));
     memset(run, 0, sizeof(run));
 
     strcpy(datafile_run, filename);
+    log("filename is %s, datafile_run is %s\n", filename, datafile_run);
     sprintf(run, ".%010ld", runno);
     memcpy(datafile_run+strlen(datafile_run), run, strlen(run));
-    printf("[%s]: new data file name (w/o seg) is %s\n", __func__, datafile_run);
+    log("new data file name (w/o seg) is %s\n", datafile_run);
 
     strcpy(spectrafile_run, filename);
     sprintf(spectra, "_spectra_.%010ld", runno);
     memcpy(spectrafile_run+strlen(spectrafile_run), spectra, strlen(spectra));
-    printf("[%s]: new spectra file name is %s\n", __func__, spectrafile_run);
+    log("new spectra file name is %s\n", spectrafile_run);
 }
 
 
@@ -100,8 +104,8 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
 {
     unsigned char dis_val;
 
-    printf("[%s]: processing %s...\n", __func__, pv[pv_en].my_name);
-    printf("[%s]: original:\n", __func__);
+    log("processing %s...\n", pv[pv_en].my_name);
+    log("original:\n");
     print_en((char*)(pv[pv_en].my_var_p));
 //    print_en(tsen);
 
@@ -116,21 +120,21 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
         //--------------------------------------------
 
         case EN_CTRL_ENABLE:
-            printf("[%s]: enable %d\n", __func__, monch);
+            log("enable %d\n", monch);
             *(((unsigned char*)(pv[pv_en].my_var_p))+monch) = en_val;
             break;
 
         //--------------------------------------------
 
         case EN_CTRL_ENABLE_ALL:
-            printf("[%s]: enable all.\n", __func__);
+            log("enable all.\n");
             memset(pv[pv_en].my_var_p, en_val, nelm);
             break;
 
         //--------------------------------------------
 
         case EN_CTRL_DISABLE:
-            printf("[%s]: disable %d\n", __func__, monch);
+            log("disable %d\n", monch);
             dis_val = 1 - en_val;
             *((unsigned char*)(pv[pv_en].my_var_p)+monch) = dis_val;
             break;
@@ -138,7 +142,7 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
         //--------------------------------------------
 
         case EN_CTRL_DISABLE_ALL:
-            printf("[%s]: disable all.\n", __func__);
+            log("disable all.\n");
             dis_val = 1 - en_val;
             memset(pv[pv_en].my_var_p, dis_val, nelm);
             break;
@@ -146,10 +150,10 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
         //--------------------------------------------
 
         default:
-            printf("[%s]: invalid option (%d).\n", __func__, *(unsigned char*)(pv[pv_ctrl].my_var_p));
+            log("invalid option (%d).\n", *(unsigned char*)(pv[pv_ctrl].my_var_p));
     }
 
-    printf("[%s]: after change:\n", __func__);
+    log("after change:\n");
     print_en((char*)(pv[pv_en].my_var_p));
 
     pvs_put(pv_en, nelm);
@@ -180,14 +184,14 @@ void pv_update(struct event_handler_args eha)
         return;
     }
 
-    printf("[%s]: %s updated.\n", __func__, ca_name(eha.chid));
-    //printf("[%s]: type is %ld, count is %ld\n", __func__, eha.type, eha.count);
+    log("updating %s.\n", ca_name(eha.chid));
+    //printf("[%s]: type is %ld, count is %ld\n", eha.type, eha.count);
 
-    // monch
+	// monch
     if ((unsigned long)eha.chid == (unsigned long)(pv[PV_MONCH].my_chid))
     {
         monch = *(unsigned int*)eha.dbr;
-        //printf("[%s]: new monch is %d\n", __func__, monch);
+        //printf("[%s]: new monch is %d\n", monch);
         pv_put(PV_MONCH_RBV);
     }
     // tsen_proc
@@ -227,40 +231,123 @@ void pv_update(struct event_handler_args eha)
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILESIZE].my_chid))
     {
         filesize = *(unsigned long*)eha.dbr;
-        //printf("[%s]: new file size is %ld\n", __func__, filesize);
+        //printf("[%s]: new file size is %ld\n", filesize);
         pv_put(PV_FILESIZE_RBV);
     }
     //filename
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILENAME].my_chid))
     {
+        memset(filename, 0, MAX_FILENAME_LEN);
         strcpy(filename, eha.dbr);
-        //printf("[%s]: new filename is %s\n", __func__, filename);
+        log("new filename is %s\n", filename);
         pv_put(PV_FILENAME_RBV);
-        filename_gen();
+        file_name_gen();
     }
     // runno
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RUNNO].my_chid))
     {
         runno = *(unsigned long*)eha.dbr;
-        //printf("[%s]: new runno is %ld\n", __func__, runno);
+        //printf("[%s]: new runno is %ld\n", runno);
         pv_put(PV_RUNNO_RBV);
-        filename_gen();
+        file_name_gen();
     }
     // ipaddr
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_IPADDR].my_chid))
     {
         strcpy(gige_ip_addr, eha.dbr);
-        //printf("[%s]: new IP address is %s\n", __func__, gige_ip_addr);
+        //printf("[%s]: new IP address is %s\n", gige_ip_addr);
         pv_put(PV_IPADDR_RBV);
     }
     // nelm
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_NELM].my_chid))
     {
         nelm = *(unsigned int*)eha.dbr;
-        //printf("[%s]: new nelm is %d\n", __func__, nelm);
+        //printf("[%s]: new nelm is %d\n", nelm);
         pv_put(PV_NELM_RBV);
     }
+/*
+    switch ((unsigned long)eha.chid)
+    {
+        // monch
+        case (unsigned long)(pv[PV_MONCH].my_chid):
+            monch = *(unsigned int*)eha.dbr;
+            //printf("[%s]: new monch is %d\n", monch);
+            pv_put(PV_MONCH_RBV);
+            break;
+    
+        // tsen_proc
+        case (unsigned long)(pv[PV_TSEN_PROC].my_chid):
+            if (1 == *(unsigned char*)eha.dbr)
+                en_array_proc(PV_TSEN_PROC, PV_TSEN_CTRL, PV_TSEN, 1);
+				break;
+    
+        // chen_proc
+        case (unsigned long)(pv[PV_CHEN_PROC].my_chid):
+            en_array_proc(PV_CHEN_PROC, PV_CHEN_CTRL, PV_CHEN, 0);
+			break;
+    
+    
+        // tsen
+        case (unsigned long)(pv[PV_TSEN].my_chid):
+            memcpy(tsen, eha.dbr, nelm);
+            //print_en((char*)eha.dbr);
+            break;
+    
+        // chen
+        case (unsigned long)(pv[PV_CHEN].my_chid):
+            memcpy(chen, eha.dbr, nelm);
+            //print_en((char*)eha.dbr);
+            break;
+    
+        // tsen_ctrl
+        case (unsigned long)(pv[PV_TSEN_CTRL].my_chid):
+            tsen_ctrl = *(char*)eha.dbr;
+	    	break;
+        
+        // chen_ctrl
+        case (unsigned long)(pv[PV_CHEN_CTRL].my_chid):
+            chen_ctrl = *(char*)eha.dbr;
+	    	break;
+    
+        // filesize
+        case (unsigned long)(pv[PV_FILESIZE].my_chid):
+            filesize = *(unsigned long*)eha.dbr;
+            //printf("[%s]: new file size is %ld\n", filesize);
+            pv_put(PV_FILESIZE_RBV);
+	    	break;
+    
+        //filename
+        case (unsigned long)(pv[PV_FILENAME].my_chid):
+            log("eha.dbr is %s\n", eha.dbr);
+            strcpy(filename, eha.dbr);
+            log("new filename is %s\n", filename);
+            pv_put(PV_FILENAME_RBV);
+            filename_gen();
+	    	break;
 
+        // runno
+        case (unsigned long)(pv[PV_RUNNO].my_chid):
+            runno = *(unsigned long*)eha.dbr;
+            //printf("[%s]: new runno is %ld\n", runno);
+            pv_put(PV_RUNNO_RBV);
+            filename_gen();
+	    	break;
+    
+	    // ipaddr
+        case (unsigned long)(pv[PV_IPADDR].my_chid):
+            strcpy(gige_ip_addr, eha.dbr);
+            //printf("[%s]: new IP address is %s\n", gige_ip_addr);
+            pv_put(PV_IPADDR_RBV);
+	    	break;
+    
+        // nelm
+        case (unsigned long)(pv[PV_NELM].my_chid):
+            nelm = *(unsigned int*)eha.dbr;
+            //printf("[%s]: new nelm is %d\n", nelm);
+            pv_put(PV_NELM_RBV);
+	    	break;
+    }
+*/
 }
 //------------------------------------------------------------------------
 
@@ -285,7 +372,7 @@ void pv_subscribe(unsigned char i)
 void* exp_mon_thread(void * arg)
 {
     printf("#####################################################\n");
-    printf("[%s]: Initializing exp_mon_thread...\n", __func__);
+    log("Initializing exp_mon_thread...\n");
 
     create_channel(__func__, FIRST_EXP_MON_PV, LAST_EXP_MON_PV);
 
@@ -293,12 +380,12 @@ void* exp_mon_thread(void * arg)
 
     // Get it for udp_conn_thread to initialize UDP connection
     pv_get(PV_IPADDR);
-    //printf("[%s]: IP address is %s\n", __func__, gige_ip_addr);
+    //printf("[%s]: IP address is %s\n", gige_ip_addr);
     pv_put(PV_IPADDR_RBV);
 
 //    // Get it for xxEN to be correctly subscribed
 //    pv_get(PV_NELM);
-//    printf("[%s]: NELM is %d\n", __func__, nelm);
+//    log("NELM is %d\n", nelm);
 //    pv_put(PV_NELM_RBV);
 //    pv[PV_TSEN].my_nelm = nelm;
 //    pv[PV_CHEN].my_nelm = nelm;
@@ -308,12 +395,12 @@ void* exp_mon_thread(void * arg)
     {
         pv_subscribe(i);
     }
-    //printf("[%s]: TSEN has %ld elements\n", __func__, ca_element_count(pv[PV_TSEN].my_chid)); 
+    //printf("[%s]: TSEN has %ld elements\n", ca_element_count(pv[PV_TSEN].my_chid)); 
 
     exp_mon_thread_ready = 1;
 
-    printf("[%s]: exp_mon_thread initialization finished.\n", __func__);
-    printf("[%s]: monitoring PV changes...\n", __func__);
+    log("exp_mon_thread initialization finished.\n");
+    log("monitoring PV changes...\n");
 
     printf("=====================================================\n");
 

@@ -37,6 +37,7 @@
 #include "germ.h"
 //#include "udp.h"
 #include "udp_conn.h"
+#include "log.h"
 
 
 //event data buffer for a frame
@@ -50,8 +51,8 @@ unsigned char read_buff;
 
 
 /* arrays for energy and time spectra */
-unsigned int mca[384][4096];
-unsigned int tdc[384][1024];
+unsigned int mca[NUM_MCA_ROW][NUM_MCA_COL];
+unsigned int tdc[NUM_TDC_ROW][NUM_TDC_COL];
 int evnt;
 
 extern pv_obj_t  pv[NUM_PVS];
@@ -68,7 +69,7 @@ extern uint32_t reg1_val;
 
 extern unsigned char read_buff, write_buff;
 
-char filename[1024];
+extern char filename[MAX_FILENAME_LEN];
 int runno;
 unsigned long filesize;
  
@@ -94,12 +95,12 @@ struct sockaddr_in *find_addr_from_iface(char *iface)
     struct sockaddr_in *sa;
     
 
-    printf("[%s]: find address from iface %s\n", __func__, iface);
+    log("find address from iface %s\n", iface);
 
     getifaddrs (&ifap);
     for (ifa = ifap; ifa; ifa = ifa->ifa_next)
     {
-        //printf("[%s]: IP address of %s is %s\n", __func__, ifa->ifa_name);
+        //log("IP address of %s is %s\n", ifa->ifa_name);
         if (ifa->ifa_addr->sa_family==AF_INET)
         {
             if ( 0 == strcmp(iface, ifa->ifa_name))
@@ -121,7 +122,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
     int rc = 0;
     struct sockaddr_in *iface_addr;
     gige_reg_t *ret;
-    char my_ip_addr[16];
+//    char my_ip_addr[16];
     
     ret = malloc(sizeof(gige_reg_t));
     if (ret == NULL)
@@ -129,8 +130,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
     
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s", gige_ip_addr); /*GIGE_CLIENT_IP);*/
-    printf( "[%s]: init with IP address %s\n",
-            __func__,
+    log( "init with IP address %s\n",
             ret->client_ip_addr);
 
     
@@ -149,28 +149,31 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
     if (iface != NULL && 
         (iface_addr = find_addr_from_iface(iface)) != NULL) {
         ret->si_recv.sin_addr.s_addr = iface_addr->sin_addr.s_addr;
-        printf("[%s]: listening on %s\n", __func__, inet_ntoa(ret->si_recv.sin_addr));
+        log("listening on %s\n", inet_ntoa(ret->si_recv.sin_addr));
     }
     else {
-        //fprintf(stderr, "[%s]: listening on any address\n", __func__);
-        printf("[%s]: listening on any address\n", __func__);
+        //fprintf(stderr, "listening on any address\n");
+        log("listening on any address\n");
         ret->si_recv.sin_addr.s_addr = htonl(INADDR_ANY);
     }
     
     // Bind to Register RX Port
-    ret->si_recv.sin_port = htons(GIGE_REGISTER_RX_PORT);
+    //ret->si_recv.sin_port = htons(GIGE_REGISTER_RX_PORT);
+    ret->si_recv.sin_port = htons(32000);
     rc = bind( ret->sock,
                (struct sockaddr *)&ret->si_recv, 
                sizeof(ret->si_recv));
     if (rc < 0) {
         perror(__func__);
+        log("failed to bind.\n");
         return NULL;
     }
     
     // Setup client READ TX
     bzero(&ret->si_read, sizeof(ret->si_read));
     ret->si_read.sin_family = AF_INET;
-    ret->si_read.sin_port = htons(GIGE_REGISTER_READ_TX_PORT);
+    //ret->si_read.sin_port = htons(GIGE_REGISTER_READ_TX_PORT);
+    ret->si_read.sin_port = htons(GIGE_DATA_RX_PORT);
     
     if (inet_aton(ret->client_ip_addr , &ret->si_read.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
@@ -183,7 +186,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
     ret->si_write.sin_port = htons(GIGE_REGISTER_WRITE_TX_PORT);
     
     if (inet_aton(ret->client_ip_addr , &ret->si_write.sin_addr) == 0) {
-        fprintf(stderr, "inet_aton() failed\n");
+        err("inet_aton() failed\n");
     }
     ret->si_lenw = sizeof(ret->si_write);
     
@@ -232,11 +235,11 @@ int gige_reg_read(gige_reg_t *reg, uint32_t addr, uint32_t *value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        printf("[%s]: select error!\n", __func__);
+        log("select error!\n");
         return -1;
     }
     else if ( ret == 0 ) {
-        printf("[%s]: socket timeout\n", __func__);
+        log("socket timeout\n");
         return -1;
     }
     
@@ -292,23 +295,23 @@ int gige_reg_write(gige_reg_t *reg, uint32_t addr, uint32_t value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        printf("[%s]: select error!\n", __func__);
+        log("select error!\n");
         return -1;
     }
     else if ( ret == 0 ) {
-        printf("[%s]: socket timeout\n", __func__);
+        log("socket timeout\n");
         return -1;
     }
     
     ssize_t n = recvfrom(reg->sock, msg , 10, 0, 
                          (struct sockaddr *)&si_other, &len);
     if (n < 0) {
-        printf("[%s]: incorrect number of bytes received (%ld)\n", __func__, n);
+        log("incorrect number of bytes received (%ld)\n", n);
         perror(__func__);
         return -1;
     }
     
-    printf("[%s]: Len = %d\t Msg = %x\n", __func__, (int)n, ntohl(msg[1]));
+    log("Len = %d\t Msg = %x\n", (int)n, ntohl(msg[1]));
     // Detect FPGA register access failure
     if (ntohl(msg[1]) == REG_ACCESS_FAIL && (ntohl(msg[0]) >> 24) == 0xff) {
         return REGISTER_WRITE_FAIL;
@@ -336,7 +339,7 @@ gige_data_t *gige_data_init(uint16_t reb_id, char *iface)
     
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s", gige_ip_addr); /*GIGE_CLIENT_IP);*/ 
-    printf("[%s]: init with IP=%s\n", __func__, ret->client_ip_addr);    
+    log("init with IP=%s\n", ret->client_ip_addr);    
     // Recv socket
     ret->sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (ret->sock == -1) {
@@ -354,14 +357,14 @@ gige_data_t *gige_data_init(uint16_t reb_id, char *iface)
         ret->si_recv.sin_addr.s_addr = iface_addr->sin_addr.s_addr;
     }
     else {
-        //fprintf(stderr, "[%s]: listening on any address\n", __func__);
+        //fprintf(stderr, "listening on any address\n");
         ret->si_recv.sin_addr.s_addr = htonl(INADDR_ANY);
     }
     
     int size = 145000000;
     if (setsockopt(ret->sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) == -1) {
-        fprintf(stderr, "Error setting socket opts: %s\n", strerror(errno));
-        printf("[%s]: error setting socket opts: %s\n", __func__, strerror(errno));
+        err("Error setting socket opts: %s\n", strerror(errno));
+        //log("error setting socket opts: %s\n", strerror(errno));
     }
     
     // Bind to Register RX Port
@@ -391,28 +394,35 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
     struct timeval tv_begin, tv_end;
     socklen_t len;
     uint16_t mesg[4096];
-    int n = 0, total_sz = 0, total_data = 0;
+    unsigned int n = 0;
+    unsigned long total_sz = 0, total_data = 0;
     uint32_t first_packetnum, packet_counter;
     //int src = 0, dest =0;
     int cnt = 0, end_of_frame = 0, start_of_frame = 0;
     //int i = 0;
     //int word, adr, de, dt, j;
-    uint16_t event_start;   // start position of event
+//    uint16_t event_start;   // start position of event
     uint16_t misc_len;      // length of packet header/tail
     uint16_t* data;
-
-    unsigned long next_frame = 0;
+    uint16_t sod;           // start of data in a packet
+//    uint16_t eod = 4;       // end of data in a packet
+    uint16_t payload_len;
+    
+    static unsigned int next_frame = 0;
 
     data = buff_p->evtdata;
     
-    evnt=0;
-    while ( ! end_of_frame) {
+//    log("receiving UDP data...\n");
+
+    while ( ! end_of_frame)
+    {
         n = recvfrom( dat->sock, mesg, sizeof(mesg), 0, 
                       (struct sockaddr *)&cliaddr, &len);
         total_sz += n;
-        //printf("Received %d bytes\n",total_sz);
+        log("received %lu bytes\n", total_sz);
 
-        if (n < 0) {
+        if (n < 0)
+        {
             perror(__func__);
             return n;
         }
@@ -420,61 +430,41 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
         /* first word always packet count */
         packet_counter = (ntohs(mesg[0]) << 16 | ntohs(mesg[1])); 
 
-        //for(i=0;i<n/2;i=i+2) 
-        //   printf("%d:\t%4x\n",i,(ntohs(mesg[i]) << 16 | ntohs(mesg[i+1])));  
+		sod      = 4;
+		misc_len = 4;
 
-        //printf("Packet Counter: %d\n",packet_counter);
-        //for (i=0;i<n;i++)
-        //    printf("%d:  %d\n",i,ntohs(mesg[i]));
-
-        //src = dest = 2;
-
-	event_start = 4;
-	misc_len    = 4;
         /* Second word is padding */
         /* if third word is 0xFEEDFACE, this is first packet of new frame */
         if (ntohs(mesg[4]) == SOF_MARKER_UPPER &&
             ntohs(mesg[5]) == SOF_MARKER_LOWER)
-	{
+		{
             gettimeofday(&tv_begin, NULL);
-            total_data = 0;
+            //total_data = 0;
             cnt = packet_counter;
             first_packetnum = packet_counter;
-	    buff_p->frame_num = (ntohs(mesg[6]) << 16) | ntohs(mesg[7]);
-	    if (next_frame != buff_p->frame_num)
-	    {
-	        printf("[%s]: ERROR! %ld frames lost.\n", __func__, buff_p->frame_num - next_frame);
-	    }
-	    next_frame = buff_p->frame_num + 1;
+			buff_p->frame_num = (ntohs(mesg[6]) << 16) | ntohs(mesg[7]);
+			if (next_frame != buff_p->frame_num)
+			{
+			    err("%u frames lost.\n", buff_p->frame_num - next_frame);
+			}
+			next_frame = buff_p->frame_num + 1;
             //words 0,1 = packet counter
-            //words 2,3 = 0xfeedface
-            //words 4,5 = 0xframenum
+            //words 2,3 = 0x00000000
+            //words 4,5 = 0xfeedface
+            //words 6,7 = 0xframenum
             //src = dest = 4; //5; //2;  
-	    event_start = 8;
-	    misc_len    = 8;
-            start_of_frame = 1;
-            printf("[%s]: got Start of Frame\n", __func__);
+			//event_start = 8;
+			//misc_len    = 8;
 
-	   /* clear result array */
-           // memset(mca,0,384*4096*sizeof(unsigned int));
-           // memset(tdc,0,384*1024*sizeof(unsigned int));
-            /*for(i=0;i<384;i++){
-                for(j=0;j<4096;j++){     
-                    mca[i][j]=0;
-                }
-            }
-            for(i=0;i<384;i++){
-                for(j=0;j<1024;j++){     
-                    tdc[i][j]=0; 
-                }
-            }*/
+            // First packet of a frame has a header length of 8
+            //sod = 8;
+            //misc_len = 8;
+
+            start_of_frame = 1;
+            log("got Start of Frame\n");
         }
-	else
-	{
-	    if (0 == start_of_frame)
-	    {
-                fprintf(stderr, "ERROR: EOF before SOF!\n");
-	    }
+		else
+		{
 
             /* if last word is 0xDECAFBAD, this is end of frame */
             if (ntohs(mesg[(n/sizeof(uint16_t))-2]) == EOF_MARKER_UPPER &&
@@ -482,49 +472,69 @@ uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
             {
                 gettimeofday(&tv_end, NULL);
                 buff_p->num_lost_event = ntohs(mesg[n/sizeof(uint16_t)-4]) << 16 | ntohs(mesg[n/sizeof(uint16_t)-3]);
-                if (0 != buff_p->num_lost_event)
-                {
-                    printf("[%s]: %d events lost due to overflow.\n", __func__, buff_p->num_lost_event);
-                }
-                misc_len = 8;
+                //misc_len = 8;
                 end_of_frame = 1;
                 //dest = 2;
-                printf("[%s]: got End of Frame\n", __func__);
+                log("got End of Frame\n");
             }
-	}
+		}
 
         /* append packet data to frame data */
         //memcpy( &data[total_data/sizeof(uint16_t)],
-	//        &mesg[src],
-	//	n-(dest*sizeof(uint16_t)));
+		//        &mesg[src],
+		//	n-(dest*sizeof(uint16_t)));
         //total_data += n-(dest*sizeof(uint16_t)); /* index into full frame data */
+        payload_len = n - (misc_len*sizeof(uint16_t));
         memcpy( &data[total_data/sizeof(uint16_t)],
-	        &mesg[event_start],
-		n-(misc_len*sizeof(uint16_t)));
-        total_data += n-(misc_len*sizeof(uint16_t)); /* index into full frame data */
+				&mesg[sod],
+				payload_len);
+        total_data += payload_len; /* index into full frame data */
         cnt++;
-        printf("[%s]: %i bytes in packet\n", __func__, n);
+        log("%u bytes in payload of  packet %u\n", payload_len, packet_counter);
     }
-    
-    if (packet_counter != cnt-1) {
-        fprintf( stderr,
-	         "ERROR: Dropped a packet! Missed %i packets\n",
-		 packet_counter - cnt);
-        return 0;
-    }
-    
- 
-    printf( "[%s]: total packets = %d,\t total Data = %4.2f MB\n",
-            __func__,
-	    packet_counter-first_packetnum,
-	    total_data/1e6 );
+
+    log("==================================================\n");
+
+    // Summary
+    log("Reception of frame %u:\n", buff_p->frame_num);
+
     dat->bitrate = total_sz/(1.0*time_elapsed(tv_begin, tv_end));
     //dat->n_pixels = total_data*8/16;
-    printf( "[%s]: throughput is %4.2f MB, %f MB/s\n",
-            __func__,
-	    total_sz/1e6,
-	    dat->bitrate );
-    //printf("%i pixels, %i bytes\n", total_data*8/16, total_data);
+    log("    throughput is %4.2f MB (including packet headers), %f MB/s\n",
+        total_sz/1e6,
+        dat->bitrate );
+    //log("%i pixels, %i bytes\n", total_data*8/16, total_data);
+
+    if (0 == start_of_frame)
+    {
+        err("Missed SOF!\n");
+    }
+
+    log("    expecting %d packets, received %u packets)\n",
+         packet_counter-first_packetnum+1,
+         cnt-first_packetnum);
+   
+    if (packet_counter != cnt-1)
+    {
+        err("Missed %u packets\n", packet_counter - cnt);
+    }
+    else
+    {
+        log("    all packets received\n");
+    }
+    
+    if (0!= buff_p->num_lost_event)
+    {
+        err("%d events lost due to UDP Tx FIFO overflow.\n", buff_p->num_lost_event);
+    }
+    else
+    {
+        log("    no overflow detected in UDP Tx FIFO\n");
+    }
+
+    log("    payload received including SOF/EOF) = %lu bytes / %4.2f MB\n", total_data, total_data/1e6);
+
+    log("==================================================\n");
     
     buff_p->num_words = total_data/sizeof(uint16_t);
     return total_data/sizeof(uint16_t);   //return number of 16 bit words  
@@ -558,63 +568,61 @@ void* udp_conn_thread(void* arg)
     t1.tv_sec  = 1;
     t1.tv_nsec = 0;
 
-    printf("#####################################################\n");
-    printf("[%s]: Initializing udp_conn_thread...\n", __func__);
+    log("#####################################################\n");
+    log("Initializing udp_conn_thread...\n");
 
     do  
     {   
         nanosleep(&t1, &t2);
     } while(0 == exp_mon_thread_ready);
 
-    printf("[%s]: the IP address of the UDP port on the detector is %s\n",
-            __func__,
+    log("the IP address of the UDP port on the detector is %s\n",
             (char*)pv[PV_IPADDR].my_var_p);
     pv_put(PV_IPADDR_RBV);
-    //gige_reg_t *reg = gige_reg_init(150, NULL);
-    gige_reg_t *reg = gige_reg_init(150, "eno1");
+    gige_reg_t *reg = gige_reg_init(150, NULL);
     gige_data_t *dat;
 
-    printf("[%s]: writing 0x%x to Register 0x01...\n", __func__, reg1_val);
+    log("writing 0x%x to Register 0x01...\n", reg1_val);
     //rc = gige_reg_write(reg, 0x00000001, 0x1);
     rc = gige_reg_write(reg, 0x00000001, reg1_val);
     if (rc != 0) {
-        fprintf(stderr, "Error: %s\n", gige_strerr(rc));
-        printf("[%s]: status returned from gige_reg_write() - %d (%s)\n", __func__, rc, gige_strerr(rc));
+        //fprintf(stderr, "Error: %s\n", gige_strerr(rc));
+        log("status returned from gige_reg_write() - %d (%s)\n", rc, gige_strerr(rc));
     }
     
-    printf("[%s]: reading Register 0x01...\n", __func__);
+    log("reading Register 0x01...\n");
     rc = gige_reg_read(reg, 0x00000001, &value);
-    printf("[%s]: readVal from register 0x01: 0x%x\n", __func__, value);
+    log("readVal from register 0x01: 0x%x\n", value);
     if (rc != 0)
     {
-        fprintf(stderr, "Error: %s\n", gige_strerr(rc));
-        printf("[%s]: status returned from gige_reg_read() - %d (%s)\n", __func__, rc, gige_strerr(rc));
+        //fprintf(stderr, "Error: %s\n", gige_strerr(rc));
+        log("status returned from gige_reg_read() - %d (%s)\n", rc, gige_strerr(rc));
     }
 
     if(reg1_val != value)
     {
-        printf("[%s]: ERROR!!! Read value 0x%x from register 1 doesn't equal to written value 0x%x.\n", __func__, value, reg1_val);
+        err("Read value 0x%x from register 1 doesn't equal to written value 0x%x.\n", value, reg1_val);
     }
 
     for(int i=0; i<NUM_FRAME_BUFF; i++)
     {
         if (pthread_mutex_init(&frame_buff[i].lock, NULL) != 0)
         {
-            printf("\n[%s]: mutex init failed!\n", __func__);
+            log("\nmutex init failed!\n");
             pthread_exit(NULL);
         }
     }
 
     udp_conn_thread_ready = 1;
 
-    printf("[%s]: receiving Data...\n", __func__); 
+    dat = gige_data_init(150, NULL);
+
+//    log("receiving Data...\n"); 
     while (1)
     { 
-        dat = gige_data_init(150, NULL);
-
         buff_p = &frame_buff[write_buff];
         pthread_mutex_lock(&buff_p->lock);
-        printf("[%s]: buff[%d] locked for writing\n", __func__, read_buff);
+        log("buff[%d] locked for writing\n", read_buff);
 
         //buff_p->num_words = gige_data_recv(dat, buff_p->evtdata);
         gige_data_recv(dat, buff_p);
@@ -624,9 +632,9 @@ void* udp_conn_thread(void* arg)
 
         pthread_mutex_unlock(&buff_p->lock);
 
+        log("buff[%d] released\n", write_buff);
         write_buff++;
         write_buff %= NUM_FRAME_BUFF;
-        printf("[%s]: buff[%d] released\n", __func__, read_buff);
     }
 
     gige_reg_close(reg);
