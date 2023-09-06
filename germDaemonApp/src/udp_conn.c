@@ -399,18 +399,25 @@ uint8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
     struct sockaddr_in cliaddr;
     struct timeval tv_begin, tv_end;
     socklen_t len;
+    uint8_t n = 0;
     
     data = buff_p->packet;
 
-	buff_p->length = recvfrom( dat->sock, data, MAX_PACKET_LENGTH, 0,
-                               (struct sockaddr *)&cliaddr, &len);
+	n = recvfrom( dat->sock, data, MAX_PACKET_LENGTH, 0,
+                  (struct sockaddr *)&cliaddr, &len);
 	        
     if ( buff_p->length < 0 )
     {
         perror(__func__);
 		return -1;
     }
-        
+
+    gettimeofday(&tv_end, NULL);
+    log( "received %u bytes in %f sec\n",
+         buff_p->length,
+         (float)(time_elapsed(tv_begin, tv_end)/1e6) );
+    tv_end = tv_begin;
+
 	return 0;
 }
 
@@ -596,8 +603,9 @@ void* udp_conn_thread(void* arg)
     t1.tv_sec  = 1;
     t1.tv_nsec = 0;
 
-    log("#####################################################\n");
-    log("Initializing udp_conn_thread...\n");
+    uint8_t i = 0;
+
+    log("########## Initializing udp_conn_thread ##########\n");
 
     do  
     {   
@@ -615,21 +623,21 @@ void* udp_conn_thread(void* arg)
     rc = gige_reg_write(reg, 0x00000001, reg1_val);
     if (rc != 0) {
         //fprintf(stderr, "Error: %s\n", gige_strerr(rc));
-        log("status returned from gige_reg_write() - %d (%s)\n", rc, gige_strerr(rc));
+        log("gige_reg_write() returned %d (%s)\n", rc, gige_strerr(rc));
     }
     
     log("reading Register 0x01...\n");
     rc = gige_reg_read(reg, 0x00000001, &value);
-    log("readVal from register 0x01: 0x%x\n", value);
+    log("register 0x01 read 0x%x\n", value);
     if (rc != 0)
     {
         //fprintf(stderr, "Error: %s\n", gige_strerr(rc));
-        log("status returned from gige_reg_read() - %d (%s)\n", rc, gige_strerr(rc));
+        log("gige_reg_read() returned %d (%s)\n", rc, gige_strerr(rc));
     }
 
     if(reg1_val != value)
     {
-        err("Read value 0x%x from register 1 doesn't equal to written value 0x%x.\n", value, reg1_val);
+        err("register 1 value 0x%x doesn't equal to written value 0x%x.\n", value, reg1_val);
     }
 
     for(int i=0; i<NUM_PACKET_BUFF; i++)
@@ -639,6 +647,7 @@ void* udp_conn_thread(void* arg)
             log("\nmutex init failed!\n");
             pthread_exit(NULL);
         }
+        packet_buff[i].flag = 0;  // reset the flags
     }
 
     udp_conn_thread_ready = 1;
@@ -654,6 +663,7 @@ void* udp_conn_thread(void* arg)
     { 
         if (gige_data_recv(dat, buff_p) == 1)
         {
+            buff_p->flag = 1;
             pthread_mutex_unlock(&buff_p->lock);
             log("buff[%d] released\n", write_buff);
 
@@ -662,6 +672,17 @@ void* udp_conn_thread(void* arg)
 
             buff_p = &frame_buff[write_buff];
             pthread_mutex_lock(&buff_p->lock);
+
+            // The flag is incremented by the data writing thread and
+            // spectra calculation thread, so the value should be 2.
+            if (i<NUM_PACKET_BUFF)
+            {
+                i++;
+            }
+            if( (buff_p->flag != 2) and (i>NUM_PACKET_BUFF) )
+            {
+                err("buffer overflow detected. Data file or spectra file may be missing\n");
+            }
             log("buff[%d] locked for writing\n", write_buff);
         }
 		else

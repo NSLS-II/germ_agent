@@ -109,8 +109,9 @@ typedef struct
 typedef struct
 {
     pthread_mutex_t  lock;
---    uint32_t         frame_num;
---    uint16_t         num_lost_event;
+//    uint32_t         frame_num;
+//    uint16_t         num_lost_event;
+    uint8_t         flag;
     uint16_t        length;
     uint8_t         packet[1024];
 } packet_buff_t;

@@ -453,11 +453,27 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    // Create data_write_thread to save raw data to files.
+    log("creating data_write_thread...\n");
+    while(1)
+    {
+        status = pthread_create(&tid[2], NULL, &data_write_thread, NULL);
+        if ( 0 == status)
+        {
+            log("data_write_thread created.\n");
+            break;
+        }
+
+        err("ERROR!!! Can't create data_write_thread: [%s]\n",
+	            __func__,
+		strerror(status));
+    }
+
     // Create data_proc_thread to process data and save files.
     log("creating data_proc_thread...\n");
     while(1)
     {
-        status = pthread_create(&tid[2], NULL, &data_proc_thread, NULL);
+        status = pthread_create(&tid[3], NULL, &data_proc_thread, NULL);
         if ( 0 == status)
         {
             log("data_proc_thread created.\n");
