@@ -51,11 +51,15 @@
 #define PV_MONCH_RBV          21
 
 //-----------------------------------------------------------
+// Read/written by data_write_thread.
+//-----------------------------------------------------------
+#define PV_DATA_FILENAME      22
+
+//-----------------------------------------------------------
 // Read/written by data_proc_thread.
 //-----------------------------------------------------------
-#define PV_MCA                22
-#define PV_TDC                23
-#define PV_DATA_FILENAME      24
+#define PV_MCA                23
+#define PV_TDC                24
 #define PV_SPEC_FILENAME      25
 
 
@@ -79,7 +83,10 @@
 #define FIRST_EXP_MON_RD_PV    4
 #define LAST_EXP_MON_RD_PV    15
 
-#define FIRST_DATA_PROC_PV    22
+#define FIRST_DATA_WRITE_PV   22
+#define LAST_DATA_WRITE_PV    22
+
+#define FIRST_DATA_PROC_PV    23
 #define LAST_DATA_PROC_PV     25
 
 #define FIRST_ENV_PV          PV_PID
@@ -94,8 +101,17 @@
 
 //###########################################################
 
-#define NUM_FRAME_BUFF   2
-#define NUM_PACKET_BUFF  8
+#define SOF_MARKER       0xfeedface
+#define SOF_MARKER_UPPER 0xfeed
+#define SOF_MARKER_LOWER 0xface
+#define EOF_MARKER       0xdecafbad
+#define EOF_MARKER_UPPER 0xdeca
+#define EOF_MARKER_LOWER 0xfbad
+
+
+//#define NUM_FRAME_BUFF       2
+#define NUM_PACKET_BUFF      8
+#define MAX_PACKET_LENGTH 2048
 
 typedef struct
 {
@@ -111,9 +127,10 @@ typedef struct
     pthread_mutex_t  lock;
 //    uint32_t         frame_num;
 //    uint16_t         num_lost_event;
-    uint8_t         flag;
-    uint16_t        length;
-    uint8_t         packet[1024];
+    uint8_t          flag;
+    uint32_t         runno;
+    uint16_t         length;
+    uint8_t          packet[MAX_PACKET_LENGTH/4];
 } packet_buff_t;
 
 typedef struct

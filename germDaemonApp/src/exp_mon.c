@@ -31,7 +31,7 @@ extern unsigned char tsen_ctrl, chen_ctrl;
 extern char          tsen[MAX_NELM], chen[MAX_NELM];
 
 extern char ca_dtype[7][11];
-char        exp_mon_thread_ready = 0;
+extern char exp_mon_thread_ready;
 extern char gige_ip_addr[16];
 //========================================================================
 // Generate names of datafile and spectrafile with FNAM and RUNNO.

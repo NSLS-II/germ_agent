@@ -51,21 +51,15 @@
 //frame_buff_t frame_buff[NUM_FRAME_BUFF];
 packet_buff_t packet_buff[NUM_PACKET_BUFF];
 
-// indicate which bufferto write/read
-unsigned char write_buff;
-unsigned char read_buff;
-
-
 /* arrays for energy and time spectra */
-unsigned int mca[NUM_MCA_ROW][NUM_MCA_COL];
-unsigned int tdc[NUM_TDC_ROW][NUM_TDC_COL];
-int evnt;
+uint16_t mca[NUM_MCA_ROW][NUM_MCA_COL];
+uint16_t tdc[NUM_TDC_ROW][NUM_TDC_COL];
 
 extern pv_obj_t  pv[NUM_PVS];
 
 
-extern char gige_ip_addr[16];
-const char *GIGE_ERROR_STRING[] = { "",
+extern char  gige_ip_addr[16];
+const char  *GIGE_ERROR_STRING[] = { "",
     "Client asserted register read failure", 
     "Client asserted register write failure" };
     
@@ -73,16 +67,13 @@ const char *GIGE_ERROR_STRING[] = { "",
 
 extern uint32_t reg1_val;
 
-extern unsigned char read_buff, write_buff;
+//extern unsigned char read_buff, write_buff;
 
-extern char filename[MAX_FILENAME_LEN];
-int runno;
-unsigned long filesize;
+extern char     filename[MAX_FILENAME_LEN];
+extern uint32_t runno;
+uint32_t        filesize;
  
-char        udp_conn_thread_ready = 0;
-extern char exp_mon_thread_ready;
-
-
+extern uint8_t  udp_conn_thread_ready;
 
 //=======================================================
 const char *gige_strerr(int code)
@@ -399,12 +390,9 @@ uint8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
     struct sockaddr_in cliaddr;
     struct timeval tv_begin, tv_end;
     socklen_t len;
-    uint8_t n = 0;
     
-    data = buff_p->packet;
-
-	n = recvfrom( dat->sock, data, MAX_PACKET_LENGTH, 0,
-                  (struct sockaddr *)&cliaddr, &len);
+	buff_p->length = recvfrom( dat->sock, buff_p->packet, MAX_PACKET_LENGTH, 0,
+                               (struct sockaddr *)&cliaddr, &len);
 	        
     if ( buff_p->length < 0 )
     {
@@ -416,7 +404,9 @@ uint8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
     log( "received %u bytes in %f sec\n",
          buff_p->length,
          (float)(time_elapsed(tv_begin, tv_end)/1e6) );
-    tv_end = tv_begin;
+
+    buff_p->runno = runno;
+    tv_begin = tv_end;
 
 	return 0;
 }
@@ -597,20 +587,16 @@ void* udp_conn_thread(void* arg)
     uint32_t value;
 
     packet_buff_t * buff_p;
+    unsigned char   write_buff = 0;
 
-    struct timespec t1, t2;
+    //struct timespec t1, t2;
 
-    t1.tv_sec  = 1;
-    t1.tv_nsec = 0;
+    //t1.tv_sec  = 1;
+    //t1.tv_nsec = 0;
 
     uint8_t i = 0;
 
     log("########## Initializing udp_conn_thread ##########\n");
-
-    do  
-    {   
-        nanosleep(&t1, &t2);
-    } while(0 == exp_mon_thread_ready);
 
     log("the IP address of the UDP port on the detector is %s\n",
             (char*)pv[PV_IPADDR].my_var_p);
@@ -650,13 +636,13 @@ void* udp_conn_thread(void* arg)
         packet_buff[i].flag = 0;  // reset the flags
     }
 
-    udp_conn_thread_ready = 1;
-
     dat = gige_data_init(150, NULL);
 
     buff_p = &packet_buff[write_buff];
     pthread_mutex_lock(&buff_p->lock);
-    log("buff[%d] locked for writing\n", read_buff);
+    log("buff[%d] locked for writing\n", write_buff);
+
+    udp_conn_thread_ready = 1;
 
 //    log("receiving Data...\n"); 
     while (1)
@@ -670,7 +656,7 @@ void* udp_conn_thread(void* arg)
             write_buff++;
             write_buff %= NUM_PACKET_BUFF;
 
-            buff_p = &frame_buff[write_buff];
+            buff_p = &packet_buff[write_buff];
             pthread_mutex_lock(&buff_p->lock);
 
             // The flag is incremented by the data writing thread and
@@ -679,7 +665,7 @@ void* udp_conn_thread(void* arg)
             {
                 i++;
             }
-            if( (buff_p->flag != 2) and (i>NUM_PACKET_BUFF) )
+            if( (buff_p->flag != 2) && (i>NUM_PACKET_BUFF) )
             {
                 err("buffer overflow detected. Data file or spectra file may be missing\n");
             }

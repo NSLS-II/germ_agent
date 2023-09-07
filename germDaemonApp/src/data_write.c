@@ -49,7 +49,7 @@
 
 #include "germ.h"
 //#include "udp.h"
-#include "data_proc.h"
+#include "data_write.h"
 #include "log.h"
 
 
@@ -57,170 +57,98 @@ extern packet_buff_t packet_buff[NUM_PACKET_BUFF];
     
 extern pv_obj_t pv[NUM_PVS];
 
-extern char         datafile_run[MAX_FILENAME_LEN];
-extern char         spectrafile_run[MAX_FILENAME_LEN];
-extern char         datafile[MAX_FILENAME_LEN];
-extern char         spectrafile[MAX_FILENAME_LEN];
+extern char         filename[MAX_FILENAME_LEN];
 
 extern unsigned int runno;
 extern uint16_t     filesize;  // in Megabyte
 
- 
-extern int evnt;
+extern uint8_t data_write_thread_ready;
 
-extern uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
-extern uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
-extern unsigned int nelm;
-
-extern char udp_conn_thread_ready;
-
-/*
-//=======================================================     
-void write_data_file( unsigned int segno,
-                      uint16_t*    src,
-                      unsigned int num_words )
+void create_datafile_name(char * datafile, uint32_t run_num)
 {
-    char           seg[20];
-//    char           fn[64];
-    struct timeval tv_begin, tv_end;
-    FILE*          fp;
+    char run[32];
 
-    sprintf(seg, ".%05d.bin", segno);
-    log("segno is %d, seg is %s\n", segno, seg);
-    strcpy(datafile, datafile_run);
-    memcpy(datafile+strlen(datafile), seg, strlen(seg));
+    strcpy(datafile, filename);
+    sprintf(run, ".%010u", run_num);
+    memcpy(datafile+strlen(datafile), run, strlen(run));
 
-    pv_put(PV_DATA_FILENAME);
-
-    fp = fopen(datafile, "a");
-    if(NULL == fp)
-    {
-        log("ERROR!!! Failed to open file %s\n", datafile);
-        return;
-    }
-
-    gettimeofday(&tv_begin, NULL);
-    fwrite(src, num_words, sizeof(uint16_t), fp);
-    gettimeofday(&tv_end, NULL);
-
-    log("wrote %6.2f MB to data file %s in %f sec\n",
-            num_words*2/1e6,
-            datafile,
-            (float)(time_elapsed(tv_begin, tv_end)/1e6) );
-
-    fclose(fp);
+    return;
 }
-*/
+
 
 //=======================================================     
-// test code for gige_reg_t 
 void* data_write_thread(void* arg)
 {
     packet_buff_t * buff_p;
     unsigned char read_buff = 0;
-    uint16_t     * evtdata_p;
 
-    /* arrays for energy and time spectra */
-    //unsigned int mca[384][4096];
-    //unsigned int tdc[384][1024];
-    //int evnt;
-    //
-    unsigned long int num_words;
-
-//    unsigned char chkerr;
-//    int checkval;
-
-//    char         fn[1024];
-//    char         run[64];
-    unsigned int prev_runno    = 0;
-    unsigned int segno         = 0;  // file segment number, always start from 0 for a new run
-    //static uint64_t words_to_full = 0;  // how many words to write to the file to reach filesize
-    //static uint64_t words_written = 0;  // how many words already written to the file
-    
-    static unsigned long next_frame = 0;
-
-    uint32_t event, et_event;
-    uint32_t adr, de, dt;
-
-    unsigned long int i, j;
-    FILE * fp;
+    FILE * fp = NULL;
+    char   datafile[MAX_FILENAME_LEN];
 
     uint8_t start_of_frame = 0;
     uint8_t end_of_frame = 0;
 
-    uint32_t packet_length, packet_counter;
-    uint64_t frame_size;
-    char datafile_name[MAX_FILENAME_LEN];
+    uint32_t run_num;
+    uint8_t  first_run = 1;  // a flag indicating receipient of first frame with any frame_num
 
-    struct timespec t1, t2;
+    uint32_t num_packets;
+    uint16_t num_events;
+    uint16_t num_lost_events;
+    uint16_t packet_length;
+    uint32_t packet_counter;
+    uint16_t payload_length;
+    uint32_t first_packetnum = 0;
+    uint32_t frame_num = 0;
+    uint32_t last_frame_num = 0;
+    uint32_t frame_size;
 
-    log("########## Initializing data_proc_thread ##########\n");
+    uint32_t *packet;
+
+    struct timeval tv_begin, tv_end;
+
+    log("########## Initializing data_write_thread ##########\n");
 
     SEVCHK( ca_context_create(ca_disable_preemptive_callback),
-            "ca_context_create @data_proc_thread" );
+            "ca_context_create @data_write_thread");
+    create_channel(__func__, FIRST_DATA_WRITE_PV, LAST_DATA_WRITE_PV);
 
-    create_channel(__func__, FIRST_DATA_PROC_PV, LAST_DATA_PROC_PV);
+    buff_p = &packet_buff[read_buff];
+    pthread_mutex_lock(&(buff_p->lock));
+    log("packet_buff[%d] locked for reading\n", read_buff);
 
-    t1.tv_sec  = 0;
-    t1.tv_nsec = 600;
-
-    do
-    {
-        nanosleep(&t1, &t2);
-    } while(0 == udp_conn_thread_ready);
+    data_write_thread_ready = 1;
 
     while(1)
     {
-        //et_event       = 0;
-        frame_size     = 0;
-        num_packets    = 0;
-        num_events     = 0;
-        start_of_frame = 0;
-        end_of_frame   = 0;
+        frame_size      = 0;
+        num_packets     = 0;
+        num_events      = 0;
+        num_lost_events = 0;
+        start_of_frame  = 0;
+        end_of_frame    = 0;
 
         // look for a whole frame
         while ( 0 == end_of_frame )
         {
-            buff_p = &packet_buff[read_buff];
-            pthread_mutex_lock(&(buff_p->lock));
-            log("packet_buff[%d] locked for reading\n", read_buff);
-
-            packet_length = buff_p->length;
-            packet        = buff_p->packet;
-            frame_size   += packet_length;
+            packet_length = (buff_p->length) >> 2;  // process data as 4-byte words
+            packet        = (uint32_t*)(buff_p->packet);
+            frame_size   += packet_length << 2;
             num_packets++;
 
-            packet_counter = (ntohs(packet[0]) << 16 | ntohs(packet[1]));
+            packet_counter = ntohs(packet[0]);
 
-            //misc_len = 4;
-
-            if (ntohs(packet[4]) == SOF_MARKER_UPPER &&
-                ntohs(packet[5]) == SOF_MARKER_LOWER)
+            //-------------------------------------------------
+            // check if it's the 1st or last packet of a frame
+            if (ntohs(packet[2]) == SOF_MARKER) // first packet
             {
                 gettimeofday(&tv_begin, NULL);
-                //total_data = 0;
-                cnt = packet_counter;
                 first_packetnum = packet_counter;
-                frame_num = (ntohs(packet[6]) << 16) | ntohs(packet[7]);
-                if (next_frame != buff_p->frame_num)
-                {
-                    err("%u frames lost.\n", frame_num - next_frame);
-                }
-                next_frame = frame_num + 1;
+                frame_num = ntohs(packet[3]);
 
-                strcpy(datafile, filename);
-                sprintf(run, ".010ld", frame_num);
-                memcpy(datafile+strlen(datafile), run, strlen(run));
-
-                fp = fopen(datafile, "a");
-                if(NULL == fp)
-                {
-                    err("Failed to open data file %s\n", datafile);
-                    continue;
-                }
+                run_num = frame_num;
 
                 start_of_frame = 1;
-                payload_length = (packet_length - 24) / 8;
+                payload_length = packet_length - 4;
                 log("got Start of Frame\n");
             }
             else
@@ -230,56 +158,95 @@ void* data_write_thread(void* arg)
                     err("missed Start of Frame\n");
                 }
 
-                // if last word is 0xDECAFBAD, this is end of frame
-                if ( ntohs(packet[(packet_length/sizeof(uint16_t))-2]) == EOF_MARKER_UPPER &&
-                     ntohs(packet[(packet_length/sizeof(uint16_t))-1]) == EOF_MARKER_LOWER )
+                if ( ntohs(packet[packet_length-1]) == EOF_MARKER ) // last packet
                 {
-                    num_lost_event = ntohs(packet[n/sizeof(uint16_t)-4]) << 16 |
-                                     ntohs(mesg[n/sizeof(uint16_t)-3]);
+                    num_lost_events = ntohs(packet[packet_length-2]);
                     end_of_frame = 1;
-                    payload_length = packet_length - 16;
+                    payload_length = packet_length - 4;
                     log("got End of Frame\n");
                 }
                 else
                 {
-                    payload_length = packet_length - 8;
+                    payload_length = packet_length - 2;
                 }
+                run_num = buff_p->runno;
             }
             buff_p->flag++;
 
+            //-------------------------------------------------
+            // move to next buffer
             pthread_mutex_unlock(&(buff_p->lock));
             log("buff[%d] released\n", read_buff);
             read_buff++;
             read_buff %= NUM_PACKET_BUFF;
-            
+            buff_p = &packet_buff[read_buff];
+            pthread_mutex_lock(&(buff_p->lock));
+            log("packet_buff[%d] locked for reading\n", read_buff);
+
+            //-------------------------------------------------
+            // write data to file
+            if(NULL == fp)
+            {
+                create_datafile_name(datafile, run_num);
+                fp = fopen(datafile, "a");
+            }
+
             if(NULL != fp)
             {
                 fwrite(packet, packet_length, 1, fp);
             }
-        }
+            else
+            {
+                err("failed to open datafile for runno %u\n", run_num);
+            }
+
+            num_events += payload_length >> 1;
+
+            if (1 == end_of_frame)
+            {
+                break;
+            }
+        } // loop until a frame has been received
 
         if(NULL != fp)
         {
             fclose(fp);
+            pv_put(PV_DATA_FILENAME);
+            fp = NULL;
             gettimeofday(&tv_end, NULL);
             log("datafile (new run) written\n"); 
         }
+        if(first_run == 0)
+        {
+            if ((frame_num-last_frame_num) != 1)
+            {
+                err("%u frames lost\n", frame_num-last_frame_num-1);
+            }
+        }
+        else
+        {
+            first_run = 0;
+        }
+        last_frame_num = frame_num;
+
         log( "frame %lu (%lu packets / %lu events / %lu bytes) processed in %f sec\n",
              frame_num, num_packets, num_events, frame_size,
              time_elapsed(tv_begin, tv_end)/1e6);
 
-        if (packet_counter != cnt-1)
+        packet_counter -= (first_packetnum-1);
+
+        if (packet_counter != num_packets )
         {
-            err("missed %u packets\n", packet_counter - cnt);
+            err("missed %u packets\n", packet_counter - num_packets);
         }
         else
         {
             log("    all packets received\n");
         }
 
-        if (0!= buff_p->num_lost_event)
+        if (0!= num_lost_events)
         {
-            err("%u events lost due to UDP Tx FIFO overflow.\n", buff_p->num_lost_event);
+            err("%u events lost due to UDP Tx FIFO overflow.\n", num_lost_events);
         }
         else
         {

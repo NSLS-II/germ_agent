@@ -33,15 +33,13 @@
 #include <time.h>
 
 #include <cadef.h>
-//#include "ezca.h"
 #include <ezca.h>
 
 #include "germ.h"
-//#include "udp.h"
-#include "udp_conn.h"
-#include "data_proc.h"
 #include "exp_mon.h"
-//#include "test.h"
+#include "udp_conn.h"
+#include "data_write.h"
+#include "data_proc.h"
 #include "log.h"
 
 
@@ -49,10 +47,6 @@
 //uint16_t evtdata[500000000];
 //uint32_t evtdata[20000000];
 //
-
-//// indicate which bufferto write/read
-//unsigned char write_buff;
-//unsigned char read_buff;
 
 /* arrays for energy and time spectra */
 //int evnt;
@@ -95,6 +89,10 @@ unsigned long pid = 0;
 char          directory[64];
 
 unsigned int  watchdog = 0;
+
+uint8_t exp_mon_thread_ready    = 0;
+uint8_t udp_conn_thread_ready   = 0;
+uint8_t data_write_thread_ready = 0;
 
 //========================================================================
 // Calculate elapsed time.
@@ -142,13 +140,13 @@ int pv_array_init(void)
     fp = fopen(PREFIX_CFG_FILE, "r");
     if(NULL == fp) 
     {   
-        err("ERROR!!! Failed to open %s\n", PREFIX_CFG_FILE);
+        err("Failed to open %s\n", PREFIX_CFG_FILE);
         return -1;
     }   
 
     if(1 != fscanf(fp, "%s", prefix))
     {
-        err("ERROR!!! Incorrect data in %s. Make sure it contains prefix only.\n",
+        err("Incorrect data in %s. Make sure it contains prefix only.\n",
                 __func__,
                 PREFIX_CFG_FILE );
         fclose(fp);
@@ -158,7 +156,7 @@ int pv_array_init(void)
     prefix_len = strlen(prefix);
     if(0 == prefix_len)
     {   
-        err("ERROR!!! Incorrect data in %s. Make sure it contains prefix only.\n",
+        err("Incorrect data in %s. Make sure it contains prefix only.\n",
                 __func__,
                 PREFIX_CFG_FILE );
         fclose(fp);
@@ -431,13 +429,18 @@ int main(int argc, char* argv[])
             break;
         }
 
-        err("ERROR!!! Can't create exp_mon: [%s]\n",
+        err("Can't create exp_mon: [%s]\n",
     	        __func__,
 		strerror(status));
     }
 
     // Create udp_conn_thread to configure FPGA and receive data through
     // UDP connection.
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == exp_mon_thread_ready);
+
     log("creating udp_conn_thread...\n");
     while(1)
     {
@@ -448,12 +451,17 @@ int main(int argc, char* argv[])
             break;
         }
 
-        err("ERROR!!! Can't create udp_conn_thread: [%s]\n",
+        err("Can't create udp_conn_thread: [%s]\n",
 	            __func__,
 		strerror(status));
     }
 
-    // Create data_write_thread to save raw data to files.
+    // Create data_write_thread to save raw data files.
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == udp_conn_thread_ready);
+
     log("creating data_write_thread...\n");
     while(1)
     {
@@ -464,12 +472,17 @@ int main(int argc, char* argv[])
             break;
         }
 
-        err("ERROR!!! Can't create data_write_thread: [%s]\n",
+        err("Can't create data_write_thread: [%s]\n",
 	            __func__,
 		strerror(status));
     }
 
-    // Create data_proc_thread to process data and save files.
+    // Create data_proc_thread to calculate and save spectra files.
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == data_write_thread_ready);
+
     log("creating data_proc_thread...\n");
     while(1)
     {
@@ -480,7 +493,7 @@ int main(int argc, char* argv[])
             break;
         }
 
-        err("ERROR!!! Can't create data_proc_thread: [%s]\n",
+        err("Can't create data_proc_thread: [%s]\n",
 	            __func__,
 		strerror(status));
     }
