@@ -1,0 +1,38 @@
+##
+# This script is used to test GeRM UDP by counting
+# indefinitely.
+##
+#!/bin/bash
+
+pv_get()
+{
+    pv=`caget -n $1`
+    val=($pv)
+    return ${val[1]}
+}
+
+caput det1.RUNNO 0 &> /dev/null
+i=0
+
+for (( ; ; ))
+do
+    date
+    pv_get det1.RUNNO
+    echo RUNNO is $?
+#    echo Loop $i:
+
+#    caput det1.RUNNO 0 &> /dev/null
+    caput det1.CNT 1   &> /dev/null
+    for (( ; ; ))
+    do
+        pv_get det1.CNT
+        cnt=$?
+        if [ $cnt == 0 ]; then
+            break
+        fi
+        sleep 0.1
+    done
+#    pv_get det1.RUNNO
+#    runno=$?
+    i=$((i+1))
+done

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+ps aux |grep bin/linux-x86_64/germ_daemon |grep -v grep | awk '{print $2}' |xargs -r kill -9
+
