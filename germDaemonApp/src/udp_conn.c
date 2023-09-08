@@ -52,8 +52,8 @@
 packet_buff_t packet_buff[NUM_PACKET_BUFF];
 
 /* arrays for energy and time spectra */
-uint16_t mca[NUM_MCA_ROW][NUM_MCA_COL];
-uint16_t tdc[NUM_TDC_ROW][NUM_TDC_COL];
+extern uint16_t mca[NUM_MCA_ROW][NUM_MCA_COL];
+extern uint16_t tdc[NUM_TDC_ROW][NUM_TDC_COL];
 
 extern pv_obj_t  pv[NUM_PVS];
 
@@ -71,7 +71,7 @@ extern uint32_t reg1_val;
 
 extern char     filename[MAX_FILENAME_LEN];
 extern uint32_t runno;
-uint32_t        filesize;
+extern uint32_t filesize;
  
 extern uint8_t  udp_conn_thread_ready;
 
