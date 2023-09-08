@@ -175,7 +175,6 @@
         <color red="255" green="255" blue="255">
         </color>
       </background_color>
-      <horizontal_alignment>1</horizontal_alignment>
       <actions>
       </actions>
       <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -257,7 +256,6 @@
         <color red="255" green="255" blue="255">
         </color>
       </background_color>
-      <horizontal_alignment>1</horizontal_alignment>
       <actions>
       </actions>
       <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -268,9 +266,6 @@
     </widget>
     <widget type="rectangle" version="2.0.0">
       <name>Rectangle_4</name>
-      <macros>
-        <pv_name></pv_name>
-      </macros>
       <x>525</x>
       <y>32</y>
       <width>295</width>
@@ -288,9 +283,6 @@ $(pv_value)</tooltip>
     </widget>
     <widget type="rectangle" version="2.0.0">
       <name>Rectangle_5</name>
-      <macros>
-        <pv_name></pv_name>
-      </macros>
       <x>875</x>
       <y>32</y>
       <width>295</width>
@@ -467,7 +459,6 @@ $(pv_value)</tooltip>
         </color>
       </background_color>
       <tooltip>$(actions)</tooltip>
-      <border_alarm_sensitive>false</border_alarm_sensitive>
     </widget>
     <widget type="action_button" version="3.0.0">
       <name>Action Button_11</name>
@@ -487,7 +478,6 @@ $(pv_value)</tooltip>
         </color>
       </background_color>
       <tooltip>$(actions)</tooltip>
-      <border_alarm_sensitive>false</border_alarm_sensitive>
     </widget>
     <widget type="led" version="2.0.0">
       <name>LED_5</name>
@@ -636,7 +626,6 @@ $(pv_value)</tooltip>
         <color red="255" green="255" blue="255">
         </color>
       </background_color>
-      <horizontal_alignment>1</horizontal_alignment>
       <actions>
       </actions>
       <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -656,7 +645,6 @@ $(pv_value)</tooltip>
         <color red="255" green="255" blue="255">
         </color>
       </background_color>
-      <horizontal_alignment>1</horizontal_alignment>
       <actions>
       </actions>
       <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -737,7 +725,6 @@ $(pv_value)</tooltip>
         <color red="255" green="255" blue="255">
         </color>
       </background_color>
-      <horizontal_alignment>1</horizontal_alignment>
       <actions>
       </actions>
       <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -838,9 +825,6 @@ $(pv_value)</tooltip>
     </widget>
     <widget type="rectangle" version="2.0.0">
       <name>Rectangle_6</name>
-      <macros>
-        <pv_name></pv_name>
-      </macros>
       <x>62</x>
       <y>22</y>
       <width>360</width>
@@ -1008,7 +992,7 @@ $(pv_value)</tooltip>
               </rule>
             </rules>
           </widget>
-          <widget type="xyplot" version="3.0.0">
+          <widget type="xyplot" version="2.0.0">
             <name>XY Graph</name>
             <x>904</x>
             <y>13</y>
@@ -1058,12 +1042,7 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
-                <on_right>false</on_right>
                 <visible>true</visible>
-                <color>
-                  <color name="Text" red="0" green="0" blue="0">
-                  </color>
-                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -1086,7 +1065,7 @@ $(pv_value)</tooltip>
               </trace>
             </traces>
           </widget>
-          <widget type="xyplot" version="3.0.0">
+          <widget type="xyplot" version="2.0.0">
             <name>XY Graph</name>
             <x>904</x>
             <y>333</y>
@@ -1137,12 +1116,7 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
-                <on_right>false</on_right>
                 <visible>true</visible>
-                <color>
-                  <color name="Text" red="0" green="0" blue="0">
-                  </color>
-                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -1176,7 +1150,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>2</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1360,7 +1333,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1410,7 +1382,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1445,7 +1416,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1505,7 +1475,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1577,7 +1546,6 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -2223,8 +2191,6 @@ $(pv_value)</tooltip>
             </symbols>
             <x>392</x>
             <y>258</y>
-            <width>1</width>
-            <height>1</height>
             <background_color>
               <color red="240" green="240" blue="240">
               </color>
@@ -2408,7 +2374,7 @@ $(pv_value)</tooltip>
               </color>
             </border_color>
           </widget>
-          <widget type="xyplot" version="3.0.0">
+          <widget type="xyplot" version="2.0.0">
             <name>XY Graph</name>
             <x>276</x>
             <y>170</y>
@@ -2458,12 +2424,7 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
-                <on_right>false</on_right>
                 <visible>true</visible>
-                <color>
-                  <color name="Text" red="0" green="0" blue="0">
-                  </color>
-                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -2598,7 +2559,7 @@ $(pv_value)</tooltip>
         <children>
           <widget type="scaledslider" version="2.0.0">
             <name>Scaled Slider</name>
-            <pv_name>$(Sys)$(Dev).HV</pv_name>
+            <pv_name>$(Sys)$(Dev):HV</pv_name>
             <x>417</x>
             <y>42</y>
             <width>91</width>
@@ -2653,7 +2614,7 @@ $(pv_value)</tooltip>
           </widget>
           <widget type="textupdate" version="2.0.0">
             <name>Text Update</name>
-            <pv_name>$(Sys)$(Dev).HV_RBV</pv_name>
+            <pv_name>$(Sys)$(Dev):HV_RBV</pv_name>
             <x>413</x>
             <y>250</y>
             <background_color>
@@ -2795,7 +2756,7 @@ $(pv_value)</tooltip>
           </widget>
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_8</name>
-            <pv_name>$(Sys)$(Dev).HV_CUR</pv_name>
+            <pv_name>$(Sys)$(Dev):HV_CUR</pv_name>
             <x>413</x>
             <y>288</y>
             <background_color>
@@ -3122,6 +3083,7 @@ $(pv_value)</tooltip>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
+    <active_tab>3</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>

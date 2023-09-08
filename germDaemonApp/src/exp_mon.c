@@ -241,7 +241,7 @@ void pv_update(struct event_handler_args eha)
         strcpy(filename, eha.dbr);
         log("new filename is %s\n", filename);
         pv_put(PV_FILENAME_RBV);
-        file_name_gen();
+        //file_name_gen();
     }
     // runno
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RUNNO].my_chid))
@@ -249,7 +249,7 @@ void pv_update(struct event_handler_args eha)
         runno = *(unsigned long*)eha.dbr;
         //printf("[%s]: new runno is %ld\n", runno);
         pv_put(PV_RUNNO_RBV);
-        file_name_gen();
+        //file_name_gen();
     }
     // ipaddr
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_IPADDR].my_chid))

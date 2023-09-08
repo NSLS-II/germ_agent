@@ -65,6 +65,7 @@ extern uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 extern uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 extern unsigned int nelm;
 
+extern uint8_t  data_write_thread_ready;
 
 //=======================================================     
 void* data_proc_thread(void* arg)
@@ -81,7 +82,7 @@ void* data_proc_thread(void* arg)
     unsigned long int i, j;
     FILE * fp;
 
-    //struct timespec t1, t2;
+    struct timespec t1, t2;
 
     uint8_t end_of_frame;
     uint32_t frame_num;
@@ -97,40 +98,50 @@ void* data_proc_thread(void* arg)
 
     create_channel(__func__, FIRST_DATA_PROC_PV, LAST_DATA_PROC_PV);
 
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == data_write_thread_ready);
+
+
+    buff_p = &(packet_buff[read_buff]);
+    mutex_lock(&(buff_p->lock), read_buff);
+
     while(1)
     {
         memset(mca, 0, sizeof(mca));
         memset(tdc, 0, sizeof(tdc));
 
-		end_of_frame   = 0;
+        end_of_frame   = 0;
 
-		while (0 == end_of_frame)
-		{
-            buff_p = &packet_buff[read_buff];
-            pthread_mutex_lock(&(buff_p->lock));
-            log("buff[%d] locked for reading\n", read_buff);
-
+        while (0 == end_of_frame)
+        {
             packet = (uint32_t*)(buff_p->packet);
             packet_length = buff_p->length >> 2;
 
-			start = 2;
-			end = 0;
+            //for(int i=0; i<packet_length; i++)
+            //{
+            //    printf("0x%08x\n", ntohl(packet[i]));
+            //}
+
+            start = 2;
+            end = 0;
       
             frame_num = buff_p->runno;
 
-            if (ntohs(packet[2]) == SOF_MARKER)
-	        {
-			    //frame_num = ntohs(packet[3]);
-			    start = 4;
-		    }
-			else
-			{
-                if ( ntohs(packet[packet_length-1]) == EOF_MARKER )
-			    {
-				    end = 2;
+            if (ntohl(packet[2]) == SOF_MARKER)
+            {
+                //frame_num = ntohl(packet[3]);
+                start = 4;
+            }
+            else
+            {
+                if ( ntohl(packet[packet_length-1]) == EOF_MARKER )
+                {
+                    end = 2;
                 }
                 end_of_frame = 1;
-			}
+            }
 
             //--------------------------------------------------------------------------
             // Calculate spectra
@@ -139,7 +150,7 @@ void* data_proc_thread(void* arg)
             // Currently only ET events are parsed.
             for(i=start; i<packet_length-end; i+=2)
             {
-                event = ntohs(packet[i]);
+                event = ntohl(packet[i]);
     
                 if(!(event & 0x80000000))    // E/T event
                 {
@@ -161,6 +172,14 @@ void* data_proc_thread(void* arg)
             }
         }
 
+        mutex_unlock(&(buff_p->lock), read_buff);
+
+        read_buff++;
+        read_buff %= NUM_PACKET_BUFF;
+        
+        buff_p = &(packet_buff[read_buff]);
+        mutex_lock(&(buff_p->lock), read_buff);
+
         pvs_put(PV_MCA, nelm);
         pvs_put(PV_TDC, nelm);
   
@@ -168,16 +187,19 @@ void* data_proc_thread(void* arg)
         // write spectra file
 
         strcpy(spectrafile, filename);
-		strcpy(spectrafile+strlen(spectrafile), ".spectra");
-		sprintf(run, ".%010u", frame_num);
+        strcpy(spectrafile+strlen(spectrafile), ".spectra");
+        sprintf(run, ".%010u", frame_num);
+        strcpy(spectrafile+strlen(spectrafile), run);
+        strcpy(spectrafile+strlen(spectrafile), ".dat");
+
         pv_put(PV_SPEC_FILENAME);
 
         fp = fopen(spectrafile, "a");
         if(fp == NULL)
-		{
-		    err("failed to open spectra file %s\n", spectrafile);
+        {
+            err("failed to open spectra file %s\n", spectrafile);
             continue;
-		}
+        }
 
         fprintf(fp, "\t#name: spect\n");
         fprintf(fp, "\t#type: matrix\n");
@@ -214,10 +236,5 @@ void* data_proc_thread(void* arg)
         fclose(fp);
         log("spectra file %s written OK\n", spectrafile);
 
-        pthread_mutex_unlock(&(buff_p->lock));
-        log("buff[%d] released\n", read_buff);
-		
-        read_buff++;
-        read_buff %= NUM_PACKET_BUFF;
     }
 }

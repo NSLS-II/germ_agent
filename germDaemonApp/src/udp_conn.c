@@ -49,7 +49,7 @@
 //uint16_t evtdata[500000000];
 //uint32_t evtdata[20000000];
 //frame_buff_t frame_buff[NUM_FRAME_BUFF];
-packet_buff_t packet_buff[NUM_PACKET_BUFF];
+extern packet_buff_t packet_buff[NUM_PACKET_BUFF];
 
 /* arrays for energy and time spectra */
 extern uint16_t mca[NUM_MCA_ROW][NUM_MCA_COL];
@@ -72,7 +72,8 @@ extern uint32_t reg1_val;
 extern char     filename[MAX_FILENAME_LEN];
 extern uint32_t runno;
 extern uint32_t filesize;
- 
+
+extern uint8_t  exp_mon_thread_ready;
 extern uint8_t  udp_conn_thread_ready;
 
 //=======================================================
@@ -385,186 +386,35 @@ void gige_data_close(gige_reg_t *dat)
 
 
 
-uint8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
+int8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
 {
     struct sockaddr_in cliaddr;
     struct timeval tv_begin, tv_end;
     socklen_t len;
     
-	buff_p->length = recvfrom( dat->sock, buff_p->packet, MAX_PACKET_LENGTH, 0,
+    gettimeofday(&tv_begin, NULL);
+    buff_p->length = recvfrom( dat->sock, buff_p->packet, MAX_PACKET_LENGTH, 0,
                                (struct sockaddr *)&cliaddr, &len);
-	        
+                
     if ( buff_p->length < 0 )
     {
         perror(__func__);
-		return -1;
+                return -1;
     }
 
     gettimeofday(&tv_end, NULL);
-    log( "received %u bytes in %f sec\n",
-         buff_p->length,
-         (float)(time_elapsed(tv_begin, tv_end)/1e6) );
+    log( "received %u bytes\n",
+         buff_p->length );
+//    log( "received %u bytes in %f sec\n",
+//         buff_p->length,
+//         (float)(time_elapsed(tv_begin, tv_end)/1e6) );
 
     buff_p->runno = runno;
     tv_begin = tv_end;
 
-	return 0;
+    return 0;
 }
 
-/*
-//=======================================================
-uint64_t gige_data_recv(gige_data_t *dat, frame_buff_t* buff_p)
-{
-    struct sockaddr_in cliaddr;
-    struct timeval tv_begin, tv_end;
-    socklen_t len;
-    uint16_t mesg[4096];
-    unsigned int n = 0;
-    unsigned long total_sz = 0, total_data = 0;
-    uint32_t first_packetnum, packet_counter;
-    //int src = 0, dest =0;
-    int cnt = 0, end_of_frame = 0, start_of_frame = 0;
-    //int i = 0;
-    //int word, adr, de, dt, j;
-//    uint16_t event_start;   // start position of event
-    uint16_t misc_len;      // length of packet header/tail
-    uint16_t* data;
-    uint16_t sod;           // start of data in a packet
-//    uint16_t eod = 4;       // end of data in a packet
-    uint16_t payload_len;
-    
-    static unsigned int next_frame = 0;
-
-    data = buff_p->evtdata;
-    
-//    log("receiving UDP data...\n");
-
-    while ( ! end_of_frame)
-    {
-        n = recvfrom( dat->sock, mesg, sizeof(mesg), 0, 
-                      (struct sockaddr *)&cliaddr, &len);
-        total_sz += n;
-        log("received %lu bytes\n", total_sz);
-
-        if (n < 0)
-        {
-            perror(__func__);
-            return n;
-        }
-
-        // first word always packet count
-        packet_counter = (ntohs(mesg[0]) << 16 | ntohs(mesg[1])); 
-
-		sod      = 4;
-		misc_len = 4;
-
-        // Second word is padding
-        // if third word is 0xFEEDFACE, this is first packet of new frame
-        if (ntohs(mesg[4]) == SOF_MARKER_UPPER &&
-            ntohs(mesg[5]) == SOF_MARKER_LOWER)
-		{
-            gettimeofday(&tv_begin, NULL);
-            //total_data = 0;
-            cnt = packet_counter;
-            first_packetnum = packet_counter;
-			buff_p->frame_num = (ntohs(mesg[6]) << 16) | ntohs(mesg[7]);
-			if (next_frame != buff_p->frame_num)
-			{
-			    err("%u frames lost.\n", buff_p->frame_num - next_frame);
-			}
-			next_frame = buff_p->frame_num + 1;
-            //words 0,1 = packet counter
-            //words 2,3 = 0x00000000
-            //words 4,5 = 0xfeedface
-            //words 6,7 = 0xframenum
-            //src = dest = 4; //5; //2;  
-			//event_start = 8;
-			//misc_len    = 8;
-
-            // First packet of a frame has a header length of 8
-            //sod = 8;
-            //misc_len = 8;
-
-            start_of_frame = 1;
-            log("got Start of Frame\n");
-        }
-		else
-		{
-
-            // if last word is 0xDECAFBAD, this is end of frame
-            if (ntohs(mesg[(n/sizeof(uint16_t))-2]) == EOF_MARKER_UPPER &&
-                ntohs(mesg[(n/sizeof(uint16_t))-1]) == EOF_MARKER_LOWER)
-            {
-                gettimeofday(&tv_end, NULL);
-                buff_p->num_lost_event = ntohs(mesg[n/sizeof(uint16_t)-4]) << 16 | ntohs(mesg[n/sizeof(uint16_t)-3]);
-                //misc_len = 8;
-                end_of_frame = 1;
-                //dest = 2;
-                log("got End of Frame\n");
-            }
-		}
-
-        // append packet data to frame data
-        //memcpy( &data[total_data/sizeof(uint16_t)],
-		//        &mesg[src],
-		//	n-(dest*sizeof(uint16_t)));
-        //total_data += n-(dest*sizeof(uint16_t)); // index into full frame data
-        payload_len = n - (misc_len*sizeof(uint16_t));
-        memcpy( &data[total_data/sizeof(uint16_t)],
-				&mesg[sod],
-				payload_len);
-        total_data += payload_len; // index into full frame data
-        cnt++;
-        log("%u bytes in payload of  packet %u\n", payload_len, packet_counter);
-    }
-
-    log("==================================================\n");
-
-    // Summary
-    log("Reception of frame %u:\n", buff_p->frame_num);
-
-    dat->bitrate = total_sz/(1.0*time_elapsed(tv_begin, tv_end));
-    //dat->n_pixels = total_data*8/16;
-    log("    throughput is %4.2f MB (including packet headers), %f MB/s\n",
-        total_sz/1e6,
-        dat->bitrate );
-    //log("%i pixels, %i bytes\n", total_data*8/16, total_data);
-
-    if (0 == start_of_frame)
-    {
-        err("Missed SOF!\n");
-    }
-
-    log("    expecting %d packets, received %u packets)\n",
-         packet_counter-first_packetnum+1,
-         cnt-first_packetnum);
-   
-    if (packet_counter != cnt-1)
-    {
-        err("Missed %u packets\n", packet_counter - cnt);
-    }
-    else
-    {
-        log("    all packets received\n");
-    }
-    
-    if (0!= buff_p->num_lost_event)
-    {
-        err("%d events lost due to UDP Tx FIFO overflow.\n", buff_p->num_lost_event);
-    }
-    else
-    {
-        log("    no overflow detected in UDP Tx FIFO\n");
-    }
-
-    log("    payload received including SOF/EOF) = %lu bytes / %4.2f MB\n", total_data, total_data/1e6);
-
-    log("==================================================\n");
-    
-    buff_p->num_words = total_data/sizeof(uint16_t);
-    return total_data/sizeof(uint16_t);   //return number of 16 bit words  
-}
-*/
 
 //=======================================================
 double gige_get_bitrate(gige_data_t *dat)
@@ -589,12 +439,19 @@ void* udp_conn_thread(void* arg)
     packet_buff_t * buff_p;
     unsigned char   write_buff = 0;
 
-    //struct timespec t1, t2;
+    struct timespec t1, t2;
 
-    //t1.tv_sec  = 1;
-    //t1.tv_nsec = 0;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 300;
 
     uint8_t i = 0;
+
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == exp_mon_thread_ready);
+
+
 
     log("########## Initializing udp_conn_thread ##########\n");
 
@@ -638,26 +495,24 @@ void* udp_conn_thread(void* arg)
 
     dat = gige_data_init(150, NULL);
 
-    buff_p = &packet_buff[write_buff];
-    pthread_mutex_lock(&buff_p->lock);
-    log("buff[%d] locked for writing\n", write_buff);
+    buff_p = &(packet_buff[write_buff]);
+    mutex_lock(&(buff_p->lock), write_buff);
 
     udp_conn_thread_ready = 1;
 
-//    log("receiving Data...\n"); 
+    log("receiving Data...\n"); 
     while (1)
     { 
-        if (gige_data_recv(dat, buff_p) == 1)
+        if ( 0 == gige_data_recv(dat, buff_p) )
         {
-            buff_p->flag = 1;
-            pthread_mutex_unlock(&buff_p->lock);
-            log("buff[%d] released\n", write_buff);
+            buff_p->flag = 0;
+            mutex_unlock(&(buff_p->lock), write_buff);
 
             write_buff++;
             write_buff %= NUM_PACKET_BUFF;
 
-            buff_p = &packet_buff[write_buff];
-            pthread_mutex_lock(&buff_p->lock);
+            buff_p = &(packet_buff[write_buff]);
+            mutex_lock(&(buff_p->lock), write_buff);
 
             // The flag is incremented by the data writing thread and
             // spectra calculation thread, so the value should be 2.
@@ -665,17 +520,17 @@ void* udp_conn_thread(void* arg)
             {
                 i++;
             }
-            if( (buff_p->flag != 2) && (i>NUM_PACKET_BUFF) )
+            if( (buff_p->flag != 2) && (i==NUM_PACKET_BUFF) )
             {
-                err("buffer overflow detected. Data file or spectra file may be missing\n");
+                err("buff[%d]-flag=%d. Overflow detected. Data file or spectra file may be corrupted.\n",
+                    write_buff, buff_p->flag);
             }
-            log("buff[%d] locked for writing\n", write_buff);
         }
-		else
-		{
-		    // Error in Rx, continue to use the current buff
-		    continue;  
-		}
+        else
+        {
+            // Error in Rx, continue to use the current buff
+            continue;  
+        }
 
     }
 

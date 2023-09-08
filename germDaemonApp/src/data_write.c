@@ -62,6 +62,7 @@ extern char         filename[MAX_FILENAME_LEN];
 extern unsigned int runno;
 extern uint16_t     filesize;  // in Megabyte
 
+extern uint8_t udp_conn_thread_ready;
 extern uint8_t data_write_thread_ready;
 
 void create_datafile_name(char * datafile, uint32_t run_num)
@@ -71,6 +72,7 @@ void create_datafile_name(char * datafile, uint32_t run_num)
     strcpy(datafile, filename);
     sprintf(run, ".%010u", run_num);
     memcpy(datafile+strlen(datafile), run, strlen(run));
+    strcpy(datafile+strlen(datafile), ".bin");
 
     return;
 }
@@ -104,7 +106,12 @@ void* data_write_thread(void* arg)
 
     uint32_t *packet;
 
+    struct timespec t1, t2;
+
     struct timeval tv_begin, tv_end;
+
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 100;
 
     log("########## Initializing data_write_thread ##########\n");
 
@@ -112,9 +119,13 @@ void* data_write_thread(void* arg)
             "ca_context_create @data_write_thread");
     create_channel(__func__, FIRST_DATA_WRITE_PV, LAST_DATA_WRITE_PV);
 
-    buff_p = &packet_buff[read_buff];
-    pthread_mutex_lock(&(buff_p->lock));
-    log("packet_buff[%d] locked for reading\n", read_buff);
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == udp_conn_thread_ready);
+
+    buff_p = &(packet_buff[read_buff]);
+    mutex_lock(&(buff_p->lock), read_buff);
 
     data_write_thread_ready = 1;
 
@@ -135,15 +146,20 @@ void* data_write_thread(void* arg)
             frame_size   += packet_length << 2;
             num_packets++;
 
-            packet_counter = ntohs(packet[0]);
+            packet_counter = ntohl(packet[0]);
+
+	    //for(int i=0; i<packet_length; i++)
+	    //{
+		//    printf("0x%08x\n", ntohl(packet[i]));
+	    //}
 
             //-------------------------------------------------
             // check if it's the 1st or last packet of a frame
-            if (ntohs(packet[2]) == SOF_MARKER) // first packet
+            if (ntohl(packet[2]) == SOF_MARKER) // first packet
             {
                 gettimeofday(&tv_begin, NULL);
                 first_packetnum = packet_counter;
-                frame_num = ntohs(packet[3]);
+                frame_num = ntohl(packet[3]);
 
                 run_num = frame_num;
 
@@ -158,9 +174,9 @@ void* data_write_thread(void* arg)
                     err("missed Start of Frame\n");
                 }
 
-                if ( ntohs(packet[packet_length-1]) == EOF_MARKER ) // last packet
+                if ( ntohl(packet[packet_length-1]) == EOF_MARKER ) // last packet
                 {
-                    num_lost_events = ntohs(packet[packet_length-2]);
+                    num_lost_events = ntohl(packet[packet_length-2]);
                     end_of_frame = 1;
                     payload_length = packet_length - 4;
                     log("got End of Frame\n");
@@ -175,13 +191,11 @@ void* data_write_thread(void* arg)
 
             //-------------------------------------------------
             // move to next buffer
-            pthread_mutex_unlock(&(buff_p->lock));
-            log("buff[%d] released\n", read_buff);
+            mutex_unlock(&(buff_p->lock), read_buff);
             read_buff++;
             read_buff %= NUM_PACKET_BUFF;
-            buff_p = &packet_buff[read_buff];
-            pthread_mutex_lock(&(buff_p->lock));
-            log("packet_buff[%d] locked for reading\n", read_buff);
+            buff_p = &(packet_buff[read_buff]);
+            mutex_lock(&(buff_p->lock), read_buff);
 
             //-------------------------------------------------
             // write data to file

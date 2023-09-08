@@ -110,7 +110,7 @@
 
 
 //#define NUM_FRAME_BUFF       2
-#define NUM_PACKET_BUFF      8
+#define NUM_PACKET_BUFF     16
 #define MAX_PACKET_LENGTH 2048
 
 typedef struct
@@ -241,6 +241,16 @@ extern char ca_dtype[7][11];
 #endif // ifdef USE_EZCA
 
 //###########################################################
+
+#define mutex_lock(mutex, buff_num)        log("wait on buff[%d]\n", buff_num);  \
+                                           printf("pthread_mutex_lock returns %d\n", pthread_mutex_lock(mutex));            \
+                                           log("buff[%d] locked\n", buff_num)
+    
+#define mutex_unlock(mutex, buff_num)      log("releasing buff[%d]\n", buff_num); \
+                                           pthread_mutex_unlock(mutex);           \
+                                           log("buff[%d] released\n", buff_num)
+
+
 // Some functions
 
 long int time_elapsed(struct timeval time_i, struct timeval time_f);

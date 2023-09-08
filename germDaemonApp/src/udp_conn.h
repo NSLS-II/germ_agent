@@ -72,7 +72,7 @@ int gige_reg_write(gige_reg_t *reg, uint32_t addr, uint32_t value);
 gige_data_t *gige_data_init(uint16_t reb_id, char *iface);
 void gige_data_close(gige_reg_t *dat);
 //uint64_t gige_data_recv(gige_data_t* dat, uint16_t *data);
-uint8_t gige_data_recv(gige_data_t* dat, packet_buff_t* buff_p);
+int8_t gige_data_recv(gige_data_t* dat, packet_buff_t* buff_p);
 double gige_get_bitrate(gige_data_t *dat);
 int gige_get_n_pixels(gige_data_t *dat);
 

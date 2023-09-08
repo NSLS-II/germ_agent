@@ -50,7 +50,7 @@
 
 /* arrays for energy and time spectra */
 //int evnt;
-
+packet_buff_t packet_buff[NUM_PACKET_BUFF];
     
 uint32_t reg1_val = 0x1;  // value to be written to FPGA register 1
 
@@ -369,8 +369,8 @@ int main(int argc, char* argv[])
     memset(hostname, 0, sizeof(hostname));
     memset(directory, 0, sizeof(directory));
 
-    t1.tv_sec  = 1;
-    t1.tv_nsec = 0;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 1000;
 
     log("initializing PV objects...\n");
     if(0 != pv_array_init())
@@ -436,10 +436,10 @@ int main(int argc, char* argv[])
 
     // Create udp_conn_thread to configure FPGA and receive data through
     // UDP connection.
-    do
-    {
-        nanosleep(&t1, &t2);
-    } while(0 == exp_mon_thread_ready);
+    //do
+    //{
+    //    nanosleep(&t1, &t2);
+    //} while(0 == exp_mon_thread_ready);
 
     log("creating udp_conn_thread...\n");
     while(1)
@@ -457,10 +457,10 @@ int main(int argc, char* argv[])
     }
 
     // Create data_write_thread to save raw data files.
-    do
-    {
-        nanosleep(&t1, &t2);
-    } while(0 == udp_conn_thread_ready);
+    //do
+    //{
+    //    nanosleep(&t1, &t2);
+    //} while(0 == udp_conn_thread_ready);
 
     log("creating data_write_thread...\n");
     while(1)
@@ -478,10 +478,10 @@ int main(int argc, char* argv[])
     }
 
     // Create data_proc_thread to calculate and save spectra files.
-    do
-    {
-        nanosleep(&t1, &t2);
-    } while(0 == data_write_thread_ready);
+    //do
+    //{
+    //    nanosleep(&t1, &t2);
+    //} while(0 == data_write_thread_ready);
 
     log("creating data_proc_thread...\n");
     while(1)
