@@ -65,13 +65,24 @@ extern uint16_t     filesize;  // in Megabyte
 extern uint8_t udp_conn_thread_ready;
 extern uint8_t data_write_thread_ready;
 
-void create_datafile_name(char * datafile, uint32_t run_num)
+void create_datafile_name(char * datafile, uint32_t run_num, uint8_t file_segment)
 {
     char run[32];
+    char file_seg[32];
 
+    memset(datafile, 0, MAX_FILENAME_LEN);
+
+    // filename from PV
     strcpy(datafile, filename);
+    
+    // run number
     sprintf(run, ".%010u", run_num);
     memcpy(datafile+strlen(datafile), run, strlen(run));
+
+    // file segment number
+    sprintf(file_seg, ".%05u", file_segment);
+    memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
+    
     strcpy(datafile+strlen(datafile), ".bin");
 
     return;
@@ -86,6 +97,10 @@ void* data_write_thread(void* arg)
 
     FILE * fp = NULL;
     char   datafile[MAX_FILENAME_LEN];
+
+    uint8_t  file_segment = 0;
+    uint64_t file_written = 0;
+    //uint16_t file_written_mb = 0;
 
     uint8_t start_of_frame = 0;
     uint8_t end_of_frame = 0;
@@ -161,6 +176,9 @@ void* data_write_thread(void* arg)
                 first_packetnum = packet_counter;
                 frame_num = ntohl(packet[3]);
 
+                file_segment = 0;
+                file_written = 0;
+
                 run_num = frame_num;
 
                 start_of_frame = 1;
@@ -195,19 +213,48 @@ void* data_write_thread(void* arg)
             read_buff++;
             read_buff %= NUM_PACKET_BUFF;
             buff_p = &(packet_buff[read_buff]);
-            mutex_lock(&(buff_p->lock), read_buff);
+            while(1)
+            {
+                mutex_lock(&(buff_p->lock), read_buff);
+                if((buff_p->flag%2) == 0)  // I haven't read it
+                {
+                    break;
+                }
+                log("no new data in buff[%d]. Wait...\n", read_buff); 
+                mutex_unlock(&(buff_p->lock), read_buff);
+                nanosleep(&t1, &t2);
+            }
 
             //-------------------------------------------------
             // write data to file
-            if(NULL == fp)
+            //
+            // New file segment for the current run if the
+            // file size limit has been reached.
+            if ((file_written>>20) > filesize)
             {
-                create_datafile_name(datafile, run_num);
+                if (fp)
+                {
+                    fclose(fp);
+                }
+                file_segment++;
+                file_written = 0;
+                create_datafile_name(datafile, run_num, file_segment);
                 fp = fopen(datafile, "a");
             }
+            else
+            {
+                // open file if it was unsuccessful for the previous packet
+                if(!fp) 
+                {
+                    create_datafile_name(datafile, run_num, file_segment);
+                    fp = fopen(datafile, "a");
+                }
+            }
 
-            if(NULL != fp)
+            if(fp)
             {
                 fwrite(packet, packet_length, 1, fp);
+                file_written += packet_length;
             }
             else
             {
@@ -222,13 +269,17 @@ void* data_write_thread(void* arg)
             }
         } // loop until a frame has been received
 
-        if(NULL != fp)
+        if(fp)
         {
             fclose(fp);
             pv_put(PV_DATA_FILENAME);
             fp = NULL;
             gettimeofday(&tv_end, NULL);
             log("datafile (new run) written\n"); 
+
+            file_segment = 0;
+            file_written = 0;
+            pv_put(PV_DATA_FILENAME);
         }
         if(first_run == 0)
         {

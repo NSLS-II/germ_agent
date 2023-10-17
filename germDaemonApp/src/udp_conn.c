@@ -444,14 +444,10 @@ void* udp_conn_thread(void* arg)
     t1.tv_sec  = 0;
     t1.tv_nsec = 300;
 
-    uint8_t i = 0;
-
     do
     {
         nanosleep(&t1, &t2);
     } while(0 == exp_mon_thread_ready);
-
-
 
     log("########## Initializing udp_conn_thread ##########\n");
 
@@ -490,7 +486,7 @@ void* udp_conn_thread(void* arg)
             log("\nmutex init failed!\n");
             pthread_exit(NULL);
         }
-        packet_buff[i].flag = 0;  // reset the flags
+        packet_buff[i].flag = 3;  // preset the flags
     }
 
     dat = gige_data_init(150, NULL);
@@ -514,16 +510,12 @@ void* udp_conn_thread(void* arg)
             buff_p = &(packet_buff[write_buff]);
             mutex_lock(&(buff_p->lock), write_buff);
 
-            // The flag is incremented by the data writing thread and
-            // spectra calculation thread, so the value should be 2.
-            if (i<NUM_PACKET_BUFF)
+            // The flag is sed by the data writing thread and spectra
+            // calculation thread, so the value should be 3.
+            if(buff_p->flag != 3)
             {
-                i++;
-            }
-            if( (buff_p->flag != 2) && (i==NUM_PACKET_BUFF) )
-            {
-                err("buff[%d]-flag=%d. Overflow detected. Data file or spectra file may be corrupted.\n",
-                    write_buff, buff_p->flag);
+                err("buff[%d]-flag=%d. Overflow detected. Data file or spectra file for run %l may be corrupted.\n",
+                    write_buff, buff_p->flag, buff_p->runno);
             }
         }
         else

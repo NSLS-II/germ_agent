@@ -92,6 +92,9 @@ void* data_proc_thread(void* arg)
     char   run[32];
     char   spectrafile[MAX_FILENAME_LEN];
 
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 100;
+
     log("########## Initializing data_proc_thread ##########\n");
 
     SEVCHK(ca_context_create(ca_disable_preemptive_callback),"ca_context_create @data_proc_thread");
@@ -156,8 +159,8 @@ void* data_proc_thread(void* arg)
                 {
                     //et_event++;
                     adr = (event >> 22) & 0x1ff;
-                    dt  = (event >> 12) & 0x3ff;
-                    de  = (event >> 0)  & 0xfff;
+                    dt  = (event >> 12) & 0x3ff;  // 10-bit time td
+                    de  = (event >> 0)  & 0xfff;  // 12-bit energy pd
     
                     if(adr >= MAX_NELM)
                         adr = MAX_NELM-1;
@@ -167,10 +170,12 @@ void* data_proc_thread(void* arg)
                         de=4095;
     
                     mca[adr*NUM_MCA_COL + de] += 1;
-                    mca[adr*NUM_TDC_COL + dt] += 1;
+                    tdc[adr*NUM_TDC_COL + dt] += 1;
                 }
             }
         }
+
+        buff_p->flag += 2;
 
         mutex_unlock(&(buff_p->lock), read_buff);
 
@@ -179,6 +184,18 @@ void* data_proc_thread(void* arg)
         
         buff_p = &(packet_buff[read_buff]);
         mutex_lock(&(buff_p->lock), read_buff);
+        while(1)
+        {
+            mutex_lock(&(buff_p->lock), read_buff);
+            if(buff_p->flag == 1)  // I must be the second to read
+            {
+                break;
+            }
+            log("no new data in buff[%d]. Wait...\n", read_buff);
+            mutex_unlock(&(buff_p->lock), read_buff);
+            nanosleep(&t1, &t2);
+        }
+
 
         pvs_put(PV_MCA, nelm);
         pvs_put(PV_TDC, nelm);
