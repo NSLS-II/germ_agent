@@ -44,9 +44,9 @@
 #include <ezca.h>
 //#include "ezca.h"
 
-#include "germ.h"
+#include "germ_atom.h"
 //#include "udp.h"
-#include "data_proc.h"
+#include "data_proc_atom.h"
 #include "log.h"
 
 
@@ -66,7 +66,7 @@ extern uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 extern uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 extern unsigned int nelm;
 
-extern uint8_t  data_write_thread_ready;
+extern atomic_char data_write_thread_ready;
 
 //=======================================================     
 void* data_proc_thread(void* arg)
@@ -105,11 +105,9 @@ void* data_proc_thread(void* arg)
     do
     {
         nanosleep(&t1, &t2);
-    } while(0 == data_write_thread_ready);
+    } while(0 == atomic_load(&data_write_thread_ready));
 
 
-    buff_p = &(packet_buff[read_buff]);
-    mutex_lock(&(buff_p->lock), read_buff);
 
     while(1)
     {
@@ -120,13 +118,12 @@ void* data_proc_thread(void* arg)
 
         while (0 == end_of_frame)
         {
+            buff_p = &(packet_buff[read_buff]);
+            log("read buff[%d]\n", read_buff);
+            lock_buff_read(read_buff, DATA_PROCCED, __func__);
+
             packet = (uint32_t*)(buff_p->packet);
             packet_length = buff_p->length >> 2;
-
-            //for(int i=0; i<packet_length; i++)
-            //{
-            //    printf("0x%08x\n", ntohl(packet[i]));
-            //}
 
             start = 2;
             end = 0;
@@ -174,29 +171,14 @@ void* data_proc_thread(void* arg)
                     tdc[adr*NUM_TDC_COL + dt] += 1;
                 }
             }
+            
+            buff_p->status |= DATA_PROCCED;
+            unlock_buff(read_buff, __func__);
+            log("buff[%d] released\n", read_buff);
+
+            read_buff++;
+            read_buff &= PACKET_BUFF_MASK;
         }
-
-        atomic_store(&buff_p->flag, atomic_load(&buff_p->flag) | DATA_PROC_MASK);
-
-        mutex_unlock(&(buff_p->lock), read_buff);
-
-        read_buff++;
-        read_buff &= PACKET_BUFF_MASK;
-        
-        buff_p = &(packet_buff[read_buff]);
-        mutex_lock(&(buff_p->lock), read_buff);
-        while(1)
-        {
-            mutex_lock(&(buff_p->lock), read_buff);
-            if( !(atomic_load(&buff_p->flag) & DATA_PROC_MASK) )  // I haven't read it
-            {
-                break;
-            }
-            log("no new data in buff[%d]. Wait...\n", read_buff);
-            mutex_unlock(&(buff_p->lock), read_buff);
-            nanosleep(&t1, &t2);
-        }
-
 
         pvs_put(PV_MCA, nelm);
         pvs_put(PV_TDC, nelm);

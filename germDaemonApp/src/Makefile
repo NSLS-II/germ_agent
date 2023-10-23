@@ -30,7 +30,8 @@ germDaemon_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 # Multi-thread Germanium daemon
 PROD_HOST += germ_daemon
-germ_daemon_SRCS     += germ.c udp_conn.c data_write.c data_proc.c exp_mon.c 
+#germ_daemon_SRCS     += germ.c udp_conn.c data_write.c data_proc.c exp_mon.c 
+germ_daemon_SRCS     += germ_atom.c udp_conn_atom.c data_write_atom.c data_proc_atom.c exp_mon.c 
 germ_daemon_LIBS     += $(EPICS_BASE_HOST_LIBS)
 germ_daemon_SYS_LIBS += pthread
 

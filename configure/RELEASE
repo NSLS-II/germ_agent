@@ -29,8 +29,8 @@
 #SNCSEQ = $(MODULES)/seq-ver
 
 # EPICS_BASE should appear last so earlier modules can override stuff:
-EPICS_BASE = /home/peter/epics/base
-EZCA = /home/peter/epics/extensions
+EPICS_BASE = /usr/lib/epics
+#EZCA = /usr/lib/epics
 #EXTENSIONS = /data/epics/base-7.0.6.1/extensions
 # Set RULES here if you want to use build rules from somewhere
 # other than EPICS_BASE:

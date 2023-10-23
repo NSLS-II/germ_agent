@@ -255,7 +255,7 @@ void pv_update(struct event_handler_args eha)
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_IPADDR].my_chid))
     {
         strcpy(gige_ip_addr, eha.dbr);
-        //printf("[%s]: new IP address is %s\n", gige_ip_addr);
+        log("new IP address is %s\n", gige_ip_addr);
         pv_put(PV_IPADDR_RBV);
     }
     // nelm

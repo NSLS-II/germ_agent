@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--Saved on 2023-09-21 09:58:27 by liji-->
 <display version="2.0.0">
-  <macros>
-    <Dev>1</Dev>
-    <Sys>det</Sys>
-  </macros>
   <width>1430</width>
   <height>1400</height>
   <background_color>
@@ -12,11 +9,15 @@
   </background_color>
   <actions>
   </actions>
-  <widget type="group" version="2.0.0">
+  <widget type="group" version="3.0.0">
     <x>30</x>
     <y>750</y>
     <width>1370</width>
     <height>610</height>
+    <background_color>
+      <color name="Read_Background" red="240" green="240" blue="240">
+      </color>
+    </background_color>
     <widget type="textupdate" version="2.0.0">
       <name>Text Update_23</name>
       <pv_name>$(Sys)$(Dev):HOSTNAME</pv_name>
@@ -447,6 +448,7 @@ $(pv_value)</tooltip>
         <action type="write_pv">
           <pv_name>$(Sys)$(Dev):TSEN_PROC</pv_name>
           <value>1</value>
+          <description>WritePV</description>
         </action>
       </actions>
       <text>Set</text>
@@ -466,6 +468,7 @@ $(pv_value)</tooltip>
         <action type="write_pv">
           <pv_name>$(Sys)$(Dev):CHEN_PROC</pv_name>
           <value>1</value>
+          <description>WritePV</description>
         </action>
       </actions>
       <text>Set</text>
@@ -964,6 +967,7 @@ $(pv_value)</tooltip>
               <action type="write_pv">
                 <pv_name>$(Sys)$(Dev).CNT</pv_name>
                 <value>Count</value>
+                <description>WritePV</description>
               </action>
             </actions>
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
@@ -992,7 +996,7 @@ $(pv_value)</tooltip>
               </rule>
             </rules>
           </widget>
-          <widget type="xyplot" version="2.0.0">
+          <widget type="xyplot" version="3.0.0">
             <name>XY Graph</name>
             <x>904</x>
             <y>13</y>
@@ -1042,7 +1046,12 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
+                <on_right>false</on_right>
                 <visible>true</visible>
+                <color>
+                  <color name="Text" red="0" green="0" blue="0">
+                  </color>
+                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -1065,7 +1074,7 @@ $(pv_value)</tooltip>
               </trace>
             </traces>
           </widget>
-          <widget type="xyplot" version="2.0.0">
+          <widget type="xyplot" version="3.0.0">
             <name>XY Graph</name>
             <x>904</x>
             <y>333</y>
@@ -1116,7 +1125,12 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
+                <on_right>false</on_right>
                 <visible>true</visible>
+                <color>
+                  <color name="Text" red="0" green="0" blue="0">
+                  </color>
+                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -1150,6 +1164,7 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
+            <horizontal_alignment>2</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1333,6 +1348,7 @@ $(pv_value)</tooltip>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
+            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1626,6 +1642,7 @@ $(pv_value)</tooltip>
               <action type="write_pv">
                 <pv_name>$(Sys)$(Dev).CNT</pv_name>
                 <value>0</value>
+                <description>WritePV</description>
               </action>
             </actions>
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
@@ -1699,6 +1716,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./loadcals</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Load cals.</text>
@@ -1913,6 +1931,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./set_threshold</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Set thresholds</text>
@@ -2028,6 +2047,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./testenable</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Enable</text>
@@ -2046,6 +2066,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./testallon</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>All on</text>
@@ -2064,6 +2085,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./testalloff</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>All off</text>
@@ -2082,6 +2104,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./testdisable</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Disable</text>
@@ -2100,6 +2123,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64/./chandisable</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Disable</text>
@@ -2118,6 +2142,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64/./enablealloff</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>All off</text>
@@ -2136,6 +2161,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./enableallon</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>All on</text>
@@ -2154,6 +2180,7 @@ $(pv_value)</tooltip>
             <actions>
               <action type="command">
                 <command>/home/peter/css_scripts/testEnable/bin/linux-x86_64//./chanenable</command>
+                <description>Execute Command</description>
               </action>
             </actions>
             <text>Enable</text>
@@ -2191,6 +2218,8 @@ $(pv_value)</tooltip>
             </symbols>
             <x>392</x>
             <y>258</y>
+            <width>1</width>
+            <height>1</height>
             <background_color>
               <color red="240" green="240" blue="240">
               </color>
@@ -2374,7 +2403,7 @@ $(pv_value)</tooltip>
               </color>
             </border_color>
           </widget>
-          <widget type="xyplot" version="2.0.0">
+          <widget type="xyplot" version="3.0.0">
             <name>XY Graph</name>
             <x>276</x>
             <y>170</y>
@@ -2424,7 +2453,12 @@ $(pv_value)</tooltip>
                   <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
                   </font>
                 </scale_font>
+                <on_right>false</on_right>
                 <visible>true</visible>
+                <color>
+                  <color name="Text" red="0" green="0" blue="0">
+                  </color>
+                </color>
               </y_axis>
             </y_axes>
             <traces>
@@ -2492,65 +2526,81 @@ $(pv_value)</tooltip>
               </color>
             </border_color>
           </widget>
-          <widget type="symbol" version="2.0.0">
-            <name>Image Boolean Indicator</name>
-            <pv_name>$(Sys)$(Dev).CNT</pv_name>
-            <symbols>
-              <symbol>off_image.png</symbol>
-              <symbol>on_image.png</symbol>
-            </symbols>
-            <x>658</x>
-            <y>40</y>
-            <background_color>
-              <color red="240" green="240" blue="240">
-              </color>
-            </background_color>
-            <actions>
-            </actions>
-            <auto_size>true</auto_size>
-            <preserve_ratio>false</preserve_ratio>
-          </widget>
-          <widget type="action_button" version="3.0.0">
-            <name>Action Button</name>
-            <actions execute_as_one="true">
-              <action type="write_pv">
-                <pv_name>$(Sys)$(Dev).CNT</pv_name>
-                <value>Count</value>
-              </action>
-            </actions>
-            <pv_name>$(Sys)$(Dev).CNT</pv_name>
-            <text>COUNT</text>
-            <x>683</x>
-            <y>65</y>
-            <width>80</width>
-            <height>40</height>
-            <background_color>
-              <color red="240" green="240" blue="240">
-              </color>
-            </background_color>
-            <rules>
-              <rule name="Rule" prop_id="foreground_color" out_exp="false">
-                <exp bool_exp="$(Sys)$(Dev).CNT==1">
-                  <value>
-                    <color name="Major" red="255" green="0" blue="0">
-                    </color>
-                  </value>
-                </exp>
-                <exp bool_exp="$(Sys)$(Dev).CNT==0">
-                  <value>
-                    <color red="192" green="192" blue="192">
-                    </color>
-                  </value>
-                </exp>
-                <pv_name>$(Sys)$(Dev).CNT</pv_name>
-              </rule>
-            </rules>
-          </widget>
           <widget type="image" version="2.0.0">
             <name>Image</name>
             <x>838</x>
             <y>136</y>
             <width>310</width>
+          </widget>
+          <widget type="action_button" version="3.0.0">
+            <name>Action Button_12</name>
+            <actions execute_as_one="true">
+              <action type="write_pv">
+                <pv_name>$(Sys)$(Dev).CNT</pv_name>
+                <value>Count</value>
+                <description>WritePV</description>
+              </action>
+            </actions>
+            <pv_name>$(Sys)$(Dev).CNT</pv_name>
+            <text>COUNT</text>
+            <x>658</x>
+            <y>37</y>
+            <width>130</width>
+            <height>100</height>
+            <font>
+              <font name="Header 2" family="Liberation Sans" style="BOLD" size="18.0">
+              </font>
+            </font>
+            <background_color>
+              <color name="OK" red="0" green="255" blue="0">
+              </color>
+            </background_color>
+            <rules>
+              <rule name="Visibility" prop_id="visible" out_exp="false">
+                <exp bool_exp="pv0==0">
+                  <value>true</value>
+                </exp>
+                <exp bool_exp="pv0==1">
+                  <value>false</value>
+                </exp>
+                <pv_name>$(Sys)$(Dev).CNT</pv_name>
+              </rule>
+            </rules>
+          </widget>
+          <widget type="action_button" version="3.0.0">
+            <name>Action Button_14</name>
+            <actions execute_as_one="true">
+              <action type="write_pv">
+                <pv_name>$(Sys)$(Dev).CNT</pv_name>
+                <value>0</value>
+                <description>WritePV</description>
+              </action>
+            </actions>
+            <pv_name>$(Sys)$(Dev).CNT</pv_name>
+            <text>STOP</text>
+            <x>658</x>
+            <y>37</y>
+            <width>130</width>
+            <height>100</height>
+            <font>
+              <font name="Header 2" family="Liberation Sans" style="BOLD" size="18.0">
+              </font>
+            </font>
+            <background_color>
+              <color name="STOP" red="255" green="0" blue="0">
+              </color>
+            </background_color>
+            <rules>
+              <rule name="Visibility" prop_id="visible" out_exp="false">
+                <exp bool_exp="pv0==0">
+                  <value>false</value>
+                </exp>
+                <exp bool_exp="pv0==1">
+                  <value>true</value>
+                </exp>
+                <pv_name>$(Sys)$(Dev).CNT</pv_name>
+              </rule>
+            </rules>
           </widget>
         </children>
       </tab>
@@ -3083,7 +3133,6 @@ $(pv_value)</tooltip>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
-    <active_tab>3</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>

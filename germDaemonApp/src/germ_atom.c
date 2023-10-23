@@ -33,15 +33,16 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <sched.h>
 
 #include <cadef.h>
 #include <ezca.h>
 
-#include "germ.h"
+#include "germ_atom.h"
 #include "exp_mon.h"
-#include "udp_conn.h"
-#include "data_write.h"
-#include "data_proc.h"
+#include "udp_conn_atom.h"
+#include "data_write_atom.h"
+#include "data_proc_atom.h"
 #include "log.h"
 
 
@@ -92,9 +93,9 @@ char          directory[64];
 
 unsigned int  watchdog = 0;
 
-uint8_t exp_mon_thread_ready    = 0;
-uint8_t udp_conn_thread_ready   = 0;
-uint8_t data_write_thread_ready = 0;
+atomic_char exp_mon_thread_ready    = ATOMIC_VAR_INIT(0);
+atomic_char udp_conn_thread_ready   = ATOMIC_VAR_INIT(0);
+atomic_char data_write_thread_ready = ATOMIC_VAR_INIT(0);
 
 //========================================================================
 // Calculate elapsed time.
@@ -105,6 +106,110 @@ long int time_elapsed(struct timeval time_i, struct timeval time_f)
 }
 
 
+//========================================================================
+// Initialize packet buffer.
+//========================================================================
+void buff_init(void)    //packet_buff_t buff_p;
+{
+    for(int i=0; i<NUM_PACKET_BUFF; i++)
+    {
+    //    packet_buff_t *buff_p = &packet_buff[i];
+    //    packet_buff[idx].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    //    packet_buff[idx].flag = DATA_WRITE_MASK | DATA_PROC_MASK;
+    //    packet_buff[i].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+        pthread_mutex_init(&packet_buff[i].mutex, NULL);
+        //if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
+        //{
+        //    log("\nmutex init failed!\n");
+        //    return(-1);
+        //}
+        //packet_buff[i].flag = DATA_WRITE_MASK | DATA_PROC_MASK;  // preset the flags
+        //atomic_init(&packet_buff[i].flag, DATA_WRITE_MASK | DATA_PROC_MASK);  // preset the flags
+        //pthread_spin_init(&packet_buff[i].spinlock, PTHREAD_PROCESS_SHARED);
+        //packet_buff[i].flag = (atomic_flag)ATOMIC_FLAG_INIT;
+        //log("buff[%d].flag = %d\n", i, packet_buff[i].flag);
+        packet_buff[i].status = DATA_WRITTEN | DATA_PROCCED;
+        log("buff[%d].status = %d\n", i, packet_buff[i].status);
+    } 
+}
+
+//========================================================================
+// Lock a buffer for read.
+//========================================================================
+void lock_buff_read(uint8_t idx, char check_val, char* caller)
+{
+    while(1)
+    {
+        log("%s - locking buff[%d]...\n", caller, idx);
+        //while(atomic_flag_test_and_set(&packet_buff[idx].flag))
+        //{
+        //    sched_yield();
+        //}
+        //pthread_spin_lock(&packet_buff[idx].spinlock);
+        pthread_mutex_lock(&packet_buff[idx].mutex);
+
+        log("%s - buff[%d] data check...\n", caller, idx)
+        log("%s - buff[%d] status is 0x%x against check value 0x%x\n", caller, idx, packet_buff[idx].status, check_val);
+        if( !(packet_buff[idx].status & check_val) )
+        {
+            log("%s - buff[%d] ready for read\n", caller, idx);
+            break;
+        }
+        //atomic_flag_clear(&packet_buff[idx].flag);
+        //pthread_spin_unlock(&packet_buff[idx].spinlock);
+        pthread_mutex_unlock(&packet_buff[idx].mutex);
+        log("%s - buffer doesn't have new data\n", caller, idx);
+        //sched_yield();
+        pthread_yield();
+    }
+    log("%s - buff[%d] locked\n", caller, idx);
+}
+
+
+//========================================================================
+// Lock a buffer for write.
+//========================================================================
+void lock_buff_write(uint8_t idx, char check_val, char* caller)
+{
+    while(1)
+    {
+        log("%s - locking buff[%d]...\n", caller, idx);
+        //while(atomic_flag_test_and_set(&packet_buff[idx].flag))
+        //{
+        //    sched_yield();
+        //}
+        //pthread_spin_lock(&packet_buff[idx].spinlock);
+        pthread_mutex_lock(&packet_buff[idx].mutex);
+
+        log("%s - buff[%d] data check...\n", caller, idx)
+        log("%s - buff[%d] status is 0x%x against check value 0x%x\n",
+            caller, idx, packet_buff[idx].status, check_val);
+        if( (packet_buff[idx].status & check_val) == check_val )
+        {
+            log("%s - buff[%d] ready for write\n", caller, idx);
+            break;
+        }
+        //atomic_flag_clear(&packet_buff[idx].flag);
+        //pthread_spin_unlock(&packet_buff[idx].spinlock);
+        pthread_mutex_unlock(&packet_buff[idx].mutex);
+        err("%s - buff[%d] hasn't been read\n", caller, idx);
+        //sched_yield();
+        pthread_yield();
+    }
+    log("%s - buff[%d] locked\n", caller, idx);
+}
+
+
+//========================================================================
+// Unlock a buffer.
+//========================================================================
+void unlock_buff(uint8_t idx, char* caller)
+{
+    //atomic_flag_clear(packet_buff[idx].flag);
+    //pthread_spin_unlock(packet_buff[idx].spinlock);
+    pthread_mutex_unlock(&packet_buff[idx].mutex);
+    log("%s - buff[%d] unlocked\n", caller, idx);
+}
 
 //========================================================================
 // Create channels for PVs.
@@ -419,23 +524,7 @@ int main(int argc, char* argv[])
     //-----------------------------------------------------------
     // Initialize packet buffers.
     //-----------------------------------------------------------
-    //packet_buff_t buff_p;
-    for(int i=0; i<NUM_PACKET_BUFF; i++)
-    {
-    //    packet_buff_t *buff_p = &packet_buff[i];
-    //    buff_p->lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-    //    buff_p->flag = DATA_WRITE_MASK | DATA_PROC_MASK;
-    //    packet_buff[i].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-        //if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
-        pthread_mutex_init(&packet_buff[i].lock, NULL);
-        //{
-        //    log("\nmutex init failed!\n");
-        //    return(-1);
-        //}
-        //packet_buff[i].flag = DATA_WRITE_MASK | DATA_PROC_MASK;  // preset the flags
-        atomic_init(&packet_buff[i].flag, DATA_WRITE_MASK | DATA_PROC_MASK);  // preset the flags
-        log("buff[%d].flag = %d\n", i, packet_buff[i].flag);
-    } 
+    buff_init();
 
     //-----------------------------------------------------------
     // Create threads.
@@ -527,6 +616,12 @@ int main(int argc, char* argv[])
     //-----------------------------------------------------------
     // Feed the watchdog.
     //-----------------------------------------------------------
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == atomic_load(&data_write_thread_ready));
+
+
     while(1)
     {
         nanosleep(&t1, &t2);
