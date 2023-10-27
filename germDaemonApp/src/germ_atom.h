@@ -31,37 +31,40 @@
 //-----------------------------------------------------------
 // Read/written by exp_mon_thread.
 //-----------------------------------------------------------
-#define PV_FILENAME            4
-#define PV_RUNNO               5
-#define PV_FILESIZE            6
-#define PV_IPADDR              7
-#define PV_NELM                8
-#define PV_MONCH               9
-#define PV_TSEN_PROC          10
-#define PV_CHEN_PROC          11
-#define PV_TSEN_CTRL          12
-#define PV_CHEN_CTRL          13
-#define PV_TSEN               14
-#define PV_CHEN               15
+#define PV_COUNT               4
+#define PV_TMP_DATAFILE_DIR    5
+#define PV_DATAFILE_DIR        6
+#define PV_FILENAME            7
+#define PV_RUNNO               8
+#define PV_FILESIZE            9
+#define PV_IPADDR             10
+#define PV_NELM               11
+#define PV_MONCH              12
+#define PV_TSEN_PROC          13
+#define PV_CHEN_PROC          14
+#define PV_TSEN_CTRL          15
+#define PV_CHEN_CTRL          16
+#define PV_TSEN               17
+#define PV_CHEN               18
 // Write only
-#define PV_FILENAME_RBV       16
-#define PV_RUNNO_RBV          17
-#define PV_FILESIZE_RBV       18
-#define PV_IPADDR_RBV         19
-#define PV_NELM_RBV           20
-#define PV_MONCH_RBV          21
+#define PV_FILENAME_RBV       19
+#define PV_RUNNO_RBV          20
+#define PV_FILESIZE_RBV       21
+#define PV_IPADDR_RBV         22
+#define PV_NELM_RBV           23
+#define PV_MONCH_RBV          24
 
 //-----------------------------------------------------------
 // Read/written by data_write_thread.
 //-----------------------------------------------------------
-#define PV_DATA_FILENAME      22
+#define PV_DATA_FILENAME      25
 
 //-----------------------------------------------------------
 // Read/written by data_proc_thread.
 //-----------------------------------------------------------
-#define PV_MCA                23
-#define PV_TDC                24
-#define PV_SPEC_FILENAME      25
+#define PV_MCA                26
+#define PV_TDC                27
+#define PV_SPEC_FILENAME      28
 
 
 //===========================================================
@@ -73,27 +76,27 @@
 #define MAX_NELM             192
 //#define MAX_NELM              96
 
-#define NUM_PVS               26
+#define NUM_PVS               29
 
 #define FIRST_MAIN_PV          0
 #define LAST_MAIN_PV           3
 
 #define FIRST_EXP_MON_PV       4
-#define LAST_EXP_MON_PV       21
+#define LAST_EXP_MON_PV       24
 
 #define FIRST_EXP_MON_RD_PV    4
-#define LAST_EXP_MON_RD_PV    15
+#define LAST_EXP_MON_RD_PV    18
 
-#define FIRST_DATA_WRITE_PV   22
-#define LAST_DATA_WRITE_PV    22
+#define FIRST_DATA_WRITE_PV   25
+#define LAST_DATA_WRITE_PV    25
 
-#define FIRST_DATA_PROC_PV    23
-#define LAST_DATA_PROC_PV     25
+#define FIRST_DATA_PROC_PV    26
+#define LAST_DATA_PROC_PV     28
 
 #define FIRST_ENV_PV          PV_PID
 #define LAST_ENV_PV           PV_DIR
 
-#define FIRST_RUN_PV          PV_FILENAME
+#define FIRST_RUN_PV          PV_TMP_DATAFILE_DIR
 #define LAST_RUN_PV           PV_FILESIZE
 
 #define FIRST_RUN_RBV_PV      PV_FILENAME_RBV

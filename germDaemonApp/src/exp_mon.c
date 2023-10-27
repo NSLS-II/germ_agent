@@ -4,18 +4,21 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include <pthread.h>
 
 //#include <tsDefs.h>
 #include <cadef.h>
 #include <ezca.h>
 //#include "ezca.h"
 
-#include "germ.h"
+#include "germ_atom.h"
 //#include "udp.h"
 #include "exp_mon.h"
 #include "log.h"
 
-extern unsigned char count;
+extern atomic_flag   count;
+extern char          tmp_datafile_dir[MAX_FILENAME_LEN];
+extern char          datafile_dir[MAX_FILENAME_LEN];
 extern char          filename[MAX_FILENAME_LEN];
 extern char          datafile_run[MAX_FILENAME_LEN];
 extern char          spectrafile_run[MAX_FILENAME_LEN];
@@ -34,7 +37,8 @@ extern char ca_dtype[7][11];
 extern char gige_ip_addr[16];
 extern atomic_char exp_mon_thread_ready;
 //========================================================================
-// Generate names of datafile and spectrafile with FNAM and RUNNO.
+// Generate names of datafile and spectrafile with DATAFILE_DIR, FNAM
+// and RUNNO.
 // data_proc_thread will append segno to funfile as the data file name
 // used to save detector data.
 //------------------------------------------------------------------------
@@ -43,13 +47,14 @@ void file_name_gen(void)
     char run[32];
     char spectra[32];
 
-    log("filename is %s, runno is %u\n", filename, runno);
+    log("directory is %s, filename is %s, runno is %u\n", tmp_datafile_dir, filename, runno);
 
     memset(datafile_run, 0, sizeof(datafile_run));
     memset(spectrafile_run, 0, sizeof(spectrafile_run));
     memset(run, 0, sizeof(run));
 
-    strcpy(datafile_run, filename);
+    strcpy(datafile_run, tmp_datafile_dir);
+    strcpy(datafile_run+strlen(datafile_run), filename);
     log("filename is %s, datafile_run is %s\n", filename, datafile_run);
     sprintf(run, ".%010ld", runno);
     memcpy(datafile_run+strlen(datafile_run), run, strlen(run));
@@ -177,6 +182,8 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
 //------------------------------------------------------------------------
 void pv_update(struct event_handler_args eha)
 {
+    uint8_t count_status;
+
     if (ECA_NORMAL != eha.status)
     {
         err( "CA subscription status is %d instead of %d (ECA_NORMAL)!\n",
@@ -234,6 +241,36 @@ void pv_update(struct event_handler_args eha)
         filesize = *(unsigned long*)eha.dbr;
         //printf("[%s]: new file size is %ld\n", filesize);
         pv_put(PV_FILESIZE_RBV);
+    }
+    // count
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_COUNT].my_chid))
+    {
+        count_status = *(unsigned long*)eha.dbr;
+        if(count_status==1)
+        {
+            atomic_flag_test_and_set(&count);
+        }
+        else
+        {
+            atomic_flag_clear(&count);
+        }
+        info("start counting.\n");
+    }
+    //tmp_datafile_dir
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_TMP_DATAFILE_DIR].my_chid))
+    {
+        memset(tmp_datafile_dir, 0, MAX_FILENAME_LEN);
+        strcpy(tmp_datafile_dir, eha.dbr);
+        log("new directory is %s\n", tmp_datafile_dir);
+        //file_name_gen();
+    }
+    //datafile_dir
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_DATAFILE_DIR].my_chid))
+    {
+        memset(datafile_dir, 0, MAX_FILENAME_LEN);
+        strcpy(datafile_dir, eha.dbr);
+        log("new directory is %s\n", datafile_dir);
+        //file_name_gen();
     }
     //filename
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILENAME].my_chid))

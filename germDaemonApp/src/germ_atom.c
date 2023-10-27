@@ -70,6 +70,9 @@ char ca_dtype[7][11] = { "DBR_STRING",
 uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 
+atomic_flag   count = ATOMIC_FLAG_INIT;
+char          tmp_datafile_dir[MAX_FILENAME_LEN];
+char          datafile_dir[MAX_FILENAME_LEN];
 char          filename[MAX_FILENAME_LEN];
 char          datafile_run[MAX_FILENAME_LEN];
 char          spectrafile_run[MAX_FILENAME_LEN];
@@ -306,6 +309,8 @@ int pv_array_init(void)
     //--------------------------------------------------
     memset(pv_suffix, 0, sizeof(pv_suffix));
     memset(pv_suffix, 0, sizeof(pv_suffix));
+    memcpy(pv_suffix[PV_COUNT],            ".CNT",                 4);
+    memcpy(pv_suffix[PV_DATAFILE_DIR],     ":DATAFILE_DIR",       12);
     memcpy(pv_suffix[PV_FILENAME],         ".FNAM",                5);
     memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV",            9);
     memcpy(pv_suffix[PV_FILESIZE],         ":FSIZ",                5);
@@ -353,37 +358,43 @@ int pv_array_init(void)
     //--------------------------------------------------
     // Pointers to variables
     //--------------------------------------------------
-    pv[PV_FILENAME].my_var_p      = (void*)filename;
-    pv[PV_FILENAME_RBV].my_var_p  = (void*)filename;
-    pv[PV_FILESIZE].my_var_p      = (void*)(&filesize);
-    pv[PV_FILESIZE_RBV].my_var_p  = (void*)(&filesize);
-    pv[PV_RUNNO].my_var_p         = (void*)(&runno);
-    pv[PV_RUNNO_RBV].my_var_p     = (void*)(&runno);
-    pv[PV_IPADDR].my_var_p        = (void*)(&gige_ip_addr);
-    pv[PV_IPADDR_RBV].my_var_p    = (void*)(&gige_ip_addr);
-    pv[PV_NELM].my_var_p          = (void*)(&nelm);
-    pv[PV_NELM_RBV].my_var_p      = (void*)(&nelm);
-    pv[PV_MONCH].my_var_p         = (void*)(&monch);
-    pv[PV_MONCH_RBV].my_var_p     = (void*)(&monch);
-    pv[PV_PID].my_var_p           = (void*)(&pid);
-    pv[PV_HOSTNAME].my_var_p      = (void*)hostname;
-    pv[PV_DIR].my_var_p           = (void*)directory;
-    pv[PV_WATCHDOG].my_var_p      = (void*)(&watchdog);
-    pv[PV_MCA].my_var_p           = (void*)(&mca);
-    pv[PV_TDC].my_var_p           = (void*)(&tdc);
-    pv[PV_TSEN_PROC].my_var_p     = (void*)(&tsen_proc);
-    pv[PV_CHEN_PROC].my_var_p     = (void*)(&chen_proc);
-    pv[PV_TSEN_CTRL].my_var_p     = (void*)(&tsen_ctrl);
-    pv[PV_CHEN_CTRL].my_var_p     = (void*)(&chen_ctrl);
-    pv[PV_TSEN].my_var_p          = (void*)(&tsen);
-    pv[PV_CHEN].my_var_p          = (void*)(&chen);
-    pv[PV_DATA_FILENAME].my_var_p = (void*)datafile;
-    pv[PV_SPEC_FILENAME].my_var_p = (void*)spectrafile;
+    //pv[PV_COUNT].my_var_p            = (void*)count;
+    pv[PV_TMP_DATAFILE_DIR].my_var_p = (void*)tmp_datafile_dir;
+    pv[PV_DATAFILE_DIR].my_var_p     = (void*)datafile_dir;
+    pv[PV_FILENAME].my_var_p         = (void*)filename;
+    pv[PV_FILENAME_RBV].my_var_p     = (void*)filename;
+    pv[PV_FILESIZE].my_var_p         = (void*)(&filesize);
+    pv[PV_FILESIZE_RBV].my_var_p     = (void*)(&filesize);
+    pv[PV_RUNNO].my_var_p            = (void*)(&runno);
+    pv[PV_RUNNO_RBV].my_var_p        = (void*)(&runno);
+    pv[PV_IPADDR].my_var_p           = (void*)(&gige_ip_addr);
+    pv[PV_IPADDR_RBV].my_var_p       = (void*)(&gige_ip_addr);
+    pv[PV_NELM].my_var_p             = (void*)(&nelm);
+    pv[PV_NELM_RBV].my_var_p         = (void*)(&nelm);
+    pv[PV_MONCH].my_var_p            = (void*)(&monch);
+    pv[PV_MONCH_RBV].my_var_p        = (void*)(&monch);
+    pv[PV_PID].my_var_p              = (void*)(&pid);
+    pv[PV_HOSTNAME].my_var_p         = (void*)hostname;
+    pv[PV_DIR].my_var_p              = (void*)directory;
+    pv[PV_WATCHDOG].my_var_p         = (void*)(&watchdog);
+    pv[PV_MCA].my_var_p              = (void*)(&mca);
+    pv[PV_TDC].my_var_p              = (void*)(&tdc);
+    pv[PV_TSEN_PROC].my_var_p        = (void*)(&tsen_proc);
+    pv[PV_CHEN_PROC].my_var_p        = (void*)(&chen_proc);
+    pv[PV_TSEN_CTRL].my_var_p        = (void*)(&tsen_ctrl);
+    pv[PV_CHEN_CTRL].my_var_p        = (void*)(&chen_ctrl);
+    pv[PV_TSEN].my_var_p             = (void*)(&tsen);
+    pv[PV_CHEN].my_var_p             = (void*)(&chen);
+    pv[PV_DATA_FILENAME].my_var_p    = (void*)datafile;
+    pv[PV_SPEC_FILENAME].my_var_p    = (void*)spectrafile;
 
     //--------------------------------------------------
     // Data types
     //--------------------------------------------------
 #ifdef USE_EZCA
+    pv[PV_COUNT].my_dtype            = ezcaByte;
+    pv[PV_TMP_DATAFILE_DIR].my_dtype = ezcaString;
+    pv[PV_DATAFILE_DIR].my_dtype     = ezcaString;
     pv[PV_FILENAME].my_dtype         = ezcaString;
     pv[PV_FILENAME_RBV].my_dtype     = ezcaString;
     pv[PV_FILESIZE].my_dtype         = ezcaLong;
@@ -411,6 +422,9 @@ int pv_array_init(void)
     pv[PV_DATA_FILENAME].my_dtype    = eacaString;
     pv[PV_SPEC_FILENAME].my_dtype    = eacaString;
 #else
+    pv[PV_COUNT].my_dtype            = DBR_CHAR;
+    pv[PV_TMP_DATAFILE_DIR].my_dtype = DBR_STRING;
+    pv[PV_DATAFILE_DIR].my_dtype     = DBR_STRING;
     pv[PV_FILENAME].my_dtype         = DBR_STRING;
     pv[PV_FILENAME_RBV].my_dtype     = DBR_STRING;
     pv[PV_FILESIZE].my_dtype         = DBR_LONG;

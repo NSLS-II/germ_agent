@@ -80,7 +80,7 @@
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
             <text>STOP</text>
             <x>648</x>
-            <y>410</y>
+            <y>444</y>
             <width>110</width>
             <height>70</height>
             <background_color>
@@ -245,9 +245,9 @@
           </widget>
           <widget type="textentry" version="3.0.0">
             <name>Text Input_1</name>
-            <pv_name>$(Sys)$(Dev).FNAM</pv_name>
+            <pv_name>$(Sys)$(Dev).TMP_DATAFILE_DIR</pv_name>
             <x>140</x>
-            <y>455</y>
+            <y>451</y>
             <width>428</width>
             <height>25</height>
             <background_color>
@@ -364,10 +364,10 @@
           </widget>
           <widget type="label" version="2.0.0">
             <name>Label_5</name>
-            <text>Data FIlename</text>
+            <text>Temp. datafile dir.</text>
             <x>16</x>
-            <y>451</y>
-            <width>164</width>
+            <y>447</y>
+            <width>122</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
             <actions>
@@ -381,7 +381,7 @@
             <name>Text Update</name>
             <pv_name>$(Sys)$(Dev):Temp1</pv_name>
             <x>124</x>
-            <y>534</y>
+            <y>567</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -406,7 +406,7 @@
             <name>Text Update_1</name>
             <pv_name>$(Sys)$(Dev):Temp2</pv_name>
             <x>274</x>
-            <y>534</y>
+            <y>567</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -431,7 +431,7 @@
             <name>Text Update_2</name>
             <pv_name>$(Sys)$(Dev):Temp3</pv_name>
             <x>424</x>
-            <y>534</y>
+            <y>567</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -456,7 +456,7 @@
             <name>Text Update_3</name>
             <pv_name>$(Sys)$(Dev):ztmp</pv_name>
             <x>574</x>
-            <y>534</y>
+            <y>567</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -482,7 +482,7 @@
             <name>Label_7</name>
             <text>Temperatures</text>
             <x>16</x>
-            <y>534</y>
+            <y>567</y>
             <width>106</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -498,7 +498,7 @@
             <name>Label_8</name>
             <text>CPU</text>
             <x>574</x>
-            <y>510</y>
+            <y>543</y>
             <height>25</height>
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
@@ -681,32 +681,6 @@
             </background_color>
             <transparent>true</transparent>
             <horizontal_alignment>1</horizontal_alignment>
-            <vertical_alignment>1</vertical_alignment>
-            <wrap_words>false</wrap_words>
-            <actions>
-            </actions>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
-          <widget type="textupdate" version="2.0.0">
-            <name>Text Update_20</name>
-            <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
-            <x>140</x>
-            <y>482</y>
-            <width>428</width>
-            <height>25</height>
-            <foreground_color>
-              <color red="32" green="74" blue="135" alpha="254">
-              </color>
-            </foreground_color>
-            <background_color>
-              <color red="255" green="255" blue="255">
-              </color>
-            </background_color>
-            <transparent>true</transparent>
-            <horizontal_alignment>2</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
             <actions>
@@ -911,7 +885,7 @@
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
             <text>COUNT</text>
             <x>648</x>
-            <y>410</y>
+            <y>444</y>
             <width>110</width>
             <height>70</height>
             <background_color>
@@ -976,6 +950,102 @@
             </foreground_color>
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
+          </widget>
+          <widget type="label" version="2.0.0">
+            <name>Label_10</name>
+            <text>Data FIlename</text>
+            <x>16</x>
+            <y>520</y>
+            <width>164</width>
+            <height>25</height>
+            <vertical_alignment>1</vertical_alignment>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textentry" version="3.0.0">
+            <name>Text Input_3</name>
+            <pv_name>$(Sys)$(Dev).FNAM</pv_name>
+            <x>140</x>
+            <y>520</y>
+            <width>154</width>
+            <height>25</height>
+            <background_color>
+              <color red="255" green="255" blue="255">
+              </color>
+            </background_color>
+            <horizontal_alignment>2</horizontal_alignment>
+            <actions>
+            </actions>
+            <border_alarm_sensitive>false</border_alarm_sensitive>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textupdate" version="2.0.0">
+            <name>Text Update_23</name>
+            <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
+            <x>298</x>
+            <y>520</y>
+            <width>154</width>
+            <height>25</height>
+            <foreground_color>
+              <color red="32" green="74" blue="135" alpha="254">
+              </color>
+            </foreground_color>
+            <background_color>
+              <color red="255" green="255" blue="255">
+              </color>
+            </background_color>
+            <transparent>true</transparent>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+            <wrap_words>false</wrap_words>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textentry" version="3.0.0">
+            <name>Text Input_5</name>
+            <pv_name>$(Sys)$(Dev).DATAFILE_DIR</pv_name>
+            <x>140</x>
+            <y>486</y>
+            <width>428</width>
+            <height>25</height>
+            <background_color>
+              <color red="255" green="255" blue="255">
+              </color>
+            </background_color>
+            <horizontal_alignment>2</horizontal_alignment>
+            <actions>
+            </actions>
+            <border_alarm_sensitive>false</border_alarm_sensitive>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="label" version="2.0.0">
+            <name>Label_11</name>
+            <text>Datafile directory</text>
+            <x>16</x>
+            <y>486</y>
+            <width>122</width>
+            <height>25</height>
+            <vertical_alignment>1</vertical_alignment>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
           </widget>
         </children>
       </tab>
@@ -2244,7 +2314,7 @@ $(pv_value)</tooltip>
     <x>30</x>
     <y>80</y>
     <width>1240</width>
-    <height>600</height>
+    <height>620</height>
     <background_color>
       <color red="240" green="240" blue="240">
       </color>
