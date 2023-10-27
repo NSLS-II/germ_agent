@@ -100,6 +100,8 @@ germ_daemon_SYS_LIBS += pthread
 
 #============================================
 
+#CXXFLAGS += -g
+germ_daemon_CFLAGS += -g
 
 #===========================
 

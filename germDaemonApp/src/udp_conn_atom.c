@@ -165,7 +165,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
                sizeof(ret->si_recv));
     if (rc < 0) {
         perror(__func__);
-        log("failed to bind.\n");
+        err("failed to bind.\n");
         return NULL;
     }
     
@@ -235,11 +235,11 @@ int gige_reg_read(gige_reg_t *reg, uint32_t addr, uint32_t *value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        log("select error!\n");
+        err("select error!\n");
         return -1;
     }
     else if ( ret == 0 ) {
-        log("socket timeout\n");
+        err("socket timeout\n");
         return -1;
     }
     
@@ -295,19 +295,19 @@ int gige_reg_write(gige_reg_t *reg, uint32_t addr, uint32_t value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        log("select error: %d! Abort\n", errno);
+        err("select error: %d! Abort\n", errno);
         return -1;
     }
     
     if ( ret == 0 ) {
-        log("socket timeout from select(). Abort.\n");
+        err("socket timeout from select(). Abort.\n");
         return -1;
     }
     
     ssize_t n = recvfrom(reg->sock, msg , 10, 0, 
                          (struct sockaddr *)&si_other, &len);
     if (n < 0) {
-        log("incorrect number of bytes received (%ld). Abort.\n", n);
+        err("incorrect number of bytes received (%ld). Abort.\n", n);
         perror(__func__);
         return -1;
     }
@@ -506,7 +506,8 @@ void* udp_conn_thread(void* arg)
 
     atomic_store(&udp_conn_thread_ready, 1);
 
-    log("receiving Data...\n"); 
+    info("ready to receive Data...\n");
+
     while (1)
     { 
         buff_p = &(packet_buff[write_buff]);

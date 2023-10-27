@@ -964,6 +964,19 @@
               </color>
             </border_color>
           </widget>
+          <widget type="textupdate" version="2.0.0">
+            <name>Text Update_4</name>
+            <pv_name>$(Sys)$(Dev):TIME_LEFT</pv_name>
+            <x>208</x>
+            <y>165</y>
+            <height>25</height>
+            <foreground_color>
+              <color red="32" green="74" blue="135">
+              </color>
+            </foreground_color>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+          </widget>
         </children>
       </tab>
       <tab>
@@ -2236,7 +2249,6 @@ $(pv_value)</tooltip>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
-    <active_tab>2</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>

@@ -142,6 +142,8 @@ void* data_write_thread(void* arg)
 
     atomic_store(&data_write_thread_ready, 1);
 
+    info("ready to read data...\n");
+
     while(1)
     {
         frame_size      = 0;
@@ -168,7 +170,7 @@ void* data_write_thread(void* arg)
 
 	    //for(int i=0; i<packet_length; i++)
 	    //{
-		//    printf("0x%08x\n", ntohl(packet[i]));
+  		//    printf("0x%08x\n", ntohl(packet[i]));
 	    //}
 
             //-------------------------------------------------
@@ -186,7 +188,7 @@ void* data_write_thread(void* arg)
 
                 start_of_frame = 1;
                 payload_length = packet_length - 4;
-                log("got Start of Frame\n");
+                info("got Start of Frame\n");
             }
             else
             {
@@ -200,7 +202,7 @@ void* data_write_thread(void* arg)
                     num_lost_events = ntohl(packet[packet_length-2]);
                     end_of_frame = 1;
                     payload_length = packet_length - 4;
-                    log("got End of Frame\n");
+                    info("got End of Frame\n");
                 }
                 else
                 {
@@ -214,31 +216,29 @@ void* data_write_thread(void* arg)
             //
             // New file segment for the current run if the
             // file size limit has been reached.
-            if ((file_written>>19) > filesize)
+            
+            // open file if it was unsuccessful for the previous packet
+            if(!fp) 
             {
-                if (fp)
-                {
-                    fclose(fp);
-                }
-                file_segment++;
-                file_written = 0;
                 create_datafile_name(datafile, run_num, file_segment);
                 fp = fopen(datafile, "a");
             }
-            else
+            
+            if(fp)
             {
-                // open file if it was unsuccessful for the previous packet
-                if(!fp) 
+                //printf("Writing %u from buff[%d] to file...\n", packet_length<<2, read_buff);
+                fwrite(packet, packet_length << 2, 1, fp);
+                file_written += packet_length << 2;
+
+                if (((file_written+1008)>>20) > filesize)
                 {
+                    fclose(fp);
+                    info("last data file is %s\n", datafile);
+                    file_segment++;
+                    file_written = 0;
                     create_datafile_name(datafile, run_num, file_segment);
                     fp = fopen(datafile, "a");
                 }
-            }
-
-            if(fp)
-            {
-                fwrite(packet, packet_length << 2, 1, fp);
-                file_written += packet_length << 2;
             }
             else
             {
@@ -287,7 +287,7 @@ void* data_write_thread(void* arg)
         }
         last_frame_num = frame_num;
 
-        note( "frame %lu (%lu packets / %lu events / %lu bytes) processed in %f sec\n",
+        info( "frame %lu (%lu packets / %lu events / %lu bytes) processed in %f sec\n",
               frame_num, num_packets, num_events, frame_size,
               time_elapsed(tv_begin, tv_end)/1e6);
 
@@ -308,7 +308,7 @@ void* data_write_thread(void* arg)
         }
         else
         {
-            note("    no overflow detected in UDP Tx FIFO\n");
+            info("    no overflow detected in UDP Tx FIFO\n");
         }
    
     }

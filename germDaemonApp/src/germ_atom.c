@@ -136,8 +136,11 @@ void buff_init(void)    //packet_buff_t buff_p;
 //========================================================================
 // Lock a buffer for read.
 //========================================================================
-void lock_buff_read(uint8_t idx, char check_val, char* caller)
+void lock_buff_read(uint8_t idx, char check_val, const char* caller)
 {
+    struct timespec t1, t2;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 10;
     while(1)
     {
         log("%s - locking buff[%d]...\n", caller, idx);
@@ -160,7 +163,8 @@ void lock_buff_read(uint8_t idx, char check_val, char* caller)
         pthread_mutex_unlock(&packet_buff[idx].mutex);
         log("%s - buffer doesn't have new data\n", caller, idx);
         //sched_yield();
-        pthread_yield();
+        //pthread_yield();
+        nanosleep(&t1, &t2);
     }
     log("%s - buff[%d] locked\n", caller, idx);
 }
@@ -169,8 +173,12 @@ void lock_buff_read(uint8_t idx, char check_val, char* caller)
 //========================================================================
 // Lock a buffer for write.
 //========================================================================
-void lock_buff_write(uint8_t idx, char check_val, char* caller)
+void lock_buff_write(uint8_t idx, char check_val, const char* caller)
 {
+    struct timespec t1, t2;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 10;
+
     while(1)
     {
         log("%s - locking buff[%d]...\n", caller, idx);
@@ -194,7 +202,8 @@ void lock_buff_write(uint8_t idx, char check_val, char* caller)
         pthread_mutex_unlock(&packet_buff[idx].mutex);
         err("%s - buff[%d] hasn't been read\n", caller, idx);
         //sched_yield();
-        pthread_yield();
+        //pthread_yield();
+        nanosleep(&t1, &t2);
     }
     log("%s - buff[%d] locked\n", caller, idx);
 }
@@ -203,7 +212,7 @@ void lock_buff_write(uint8_t idx, char check_val, char* caller)
 //========================================================================
 // Unlock a buffer.
 //========================================================================
-void unlock_buff(uint8_t idx, char* caller)
+void unlock_buff(uint8_t idx, const char* caller)
 {
     //atomic_flag_clear(packet_buff[idx].flag);
     //pthread_spin_unlock(packet_buff[idx].spinlock);
@@ -219,12 +228,27 @@ void create_channel(const char * thread, unsigned int first_pv, unsigned int las
     int status;
     for (int i=first_pv; i<=last_pv; i++)
     {   
-        log("creating CA channel for %s (%s)...\n", pv[i].my_name, thread);
-        status = ca_create_channel(pv[i].my_name, NULL, NULL, 0, &pv[i].my_chid);
+        info("creating CA channel for %s (%s)...\n", pv[i].my_name, thread);
+        //for (int j=0; j<8; j++)
+        //{
+            status = ca_create_channel(pv[i].my_name, NULL, NULL, 0, &pv[i].my_chid);
+        //    if (1==ECA_NORMAL)
+        //    {
+        //        break;
+        //    }
+        //    sleep(1);
+        //}
         SEVCHK(status, "Create channel failed");
-        status = ca_pend_io(1.0);
+        //for (int j=0; j<8; j++)
+        //{
+            status = ca_pend_io(1.0);
+        //    if (1==ECA_NORMAL)
+        //    {
+        //        break;
+        //    }
+        //    sleep(1);
+        //}
         SEVCHK(status, "Channel connection failed");
-        //sleep(1);
     }   
     //printf("[%s]: finished creating CA channels.\n", thread);
 }
@@ -323,7 +347,7 @@ int pv_array_init(void)
                 pv_suffix[i],
                 strlen(pv_suffix[i]));
 
-        printf("%s\n", pv[i].my_name);
+        log("%s\n", pv[i].my_name);
     }
 
     //--------------------------------------------------
@@ -483,7 +507,7 @@ int main(int argc, char* argv[])
     log("initializing PV objects...\n");
     if(0 != pv_array_init())
     {
-        log("failed to initialize PV objects.\n");
+        err("failed to initialize PV objects.\n");
         return -1;
     }
 

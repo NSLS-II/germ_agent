@@ -126,8 +126,8 @@ typedef struct
 
 typedef struct
 {
-    uint8_t             status;
     pthread_mutex_t     mutex;
+    uint8_t             status;
 //    pthread_spinlock_t  spinlock;
 //    uint32_t            frame_num;
 //    uint16_t            num_lost_event;
@@ -264,9 +264,9 @@ extern char ca_dtype[7][11];
 
 long int time_elapsed(struct timeval time_i, struct timeval time_f);
 
-void lock_buff_read(uint8_t idx, char check_val, char* caller);
-void lock_buff_write(uint8_t idx, char check_val, char* caller);
-void unlock_buff(uint8_t, char* caller);
+void lock_buff_read(uint8_t idx, char check_val, const char* caller);
+void lock_buff_write(uint8_t idx, char check_val, const char* caller);
+void unlock_buff(uint8_t, const char* caller);
 
 void create_channel(const char* thread, unsigned int first, unsigned int last_pv);
 

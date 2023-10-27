@@ -26,35 +26,35 @@
 
 
 //#define _DBG_
-#define _NOTE_
+#define _INFO_
 
 #ifdef _DBG_
-#define log(a, ...)   {char* _str_ptr_ = malloc(strlen(a)+100);     \
-                       strcpy(_str_ptr_, "[%s]: ");                 \
-                       strcat(_str_ptr_, a);                        \
-                       printf(_str_ptr_, __func__, ##__VA_ARGS__);  \
-                       free(_str_ptr_);                            }
+#define log(a, ...)   { char* _str_ptr_ = malloc(strlen(a)+100);     \
+                        strcpy(_str_ptr_, "[%s]: ");                 \
+                        strcat(_str_ptr_, a);                        \
+                        printf(_str_ptr_, __func__, ##__VA_ARGS__);  \
+                        free(_str_ptr_);                            }
 #else
 #define log(a,...)
 #endif
 
-#ifdef _NOTE_
-#define note(a, ...)   {char* _str_ptr_ = malloc(strlen(a)+100);    \
-                       strcpy(_str_ptr_, "[%s]: ");                 \
-                       strcat(_str_ptr_, a);                        \
-                       printf(_str_ptr_, __func__, ##__VA_ARGS__);  \
-                       free(_str_ptr_);                            }
+#ifdef _INFO_
+#define info(a, ...)   { char* _str_ptr_ = malloc(strlen(a)+100);     \
+                         strcpy(_str_ptr_, "[%s]: ");                 \
+                         strcat(_str_ptr_, a);                        \
+                         printf(_str_ptr_, __func__, ##__VA_ARGS__);  \
+                         free(_str_ptr_);                            }
 #else
-#define note(a,...)
+#define info(a,...)
 #endif
 
-#define err(a, ...)   {char* _str_ptr_ = malloc(strlen(a)+100);                        \
-                       time_t raw_time;                                                \
-                       struct tm * timeinfo;                                           \
-                       time( &raw_time);                                               \
-                       timeinfo = localtime( &raw_time );                              \
-                       strcpy(_str_ptr_, "ERROR @%s [%s]: ");                          \
-                       strcat(_str_ptr_, a);                                           \
-                       printf(_str_ptr_, asctime(timeinfo), __func__, ##__VA_ARGS__);  \
-                       free(_str_ptr_);                            }
+#define err(a, ...)   { char* _str_ptr_ = malloc(strlen(a)+100);                        \
+                        time_t raw_time;                                                \
+                        struct tm * timeinfo;                                           \
+                        time( &raw_time);                                               \
+                        timeinfo = localtime( &raw_time );                              \
+                        strcpy(_str_ptr_, "ERROR @%s    [%s]: ");                          \
+                        strcat(_str_ptr_, a);                                           \
+                        printf(_str_ptr_, asctime(timeinfo), __func__, ##__VA_ARGS__);  \
+                        free(_str_ptr_);                            }
 #endif

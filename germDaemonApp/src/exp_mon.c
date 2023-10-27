@@ -31,8 +31,8 @@ extern unsigned char tsen_ctrl, chen_ctrl;
 extern char          tsen[MAX_NELM], chen[MAX_NELM];
 
 extern char ca_dtype[7][11];
-extern char exp_mon_thread_ready;
 extern char gige_ip_addr[16];
+extern atomic_char exp_mon_thread_ready;
 //========================================================================
 // Generate names of datafile and spectrafile with FNAM and RUNNO.
 // data_proc_thread will append segno to funfile as the data file name
@@ -65,6 +65,7 @@ void file_name_gen(void)
 //------------------------------------------------------------------------
 void print_en(char* en)
 {
+#ifdef _DBG_
     int width = 10;
     unsigned int i, j, I, J;
     I = nelm/width;
@@ -91,6 +92,7 @@ void print_en(char* en)
     for(j=0; j<J; j++)
         printf("%6d", en[i*width+j]);
     printf("\n\n");
+#endif
 }
         
 
@@ -177,8 +179,7 @@ void pv_update(struct event_handler_args eha)
 {
     if (ECA_NORMAL != eha.status)
     {
-        printf( "[%s]: CA subscription status is %d instead of %d (ECA_NORMAL)!\n",
-                __func__,
+        err( "CA subscription status is %d instead of %d (ECA_NORMAL)!\n",
                 eha.status,
                 ECA_NORMAL);
         return;
@@ -397,7 +398,7 @@ void* exp_mon_thread(void * arg)
     }
     //printf("[%s]: TSEN has %ld elements\n", ca_element_count(pv[PV_TSEN].my_chid)); 
 
-    exp_mon_thread_ready = 1;
+    atomic_store(&exp_mon_thread_ready, 1);
 
     log("exp_mon_thread initialization finished.\n");
     log("monitoring PV changes...\n");
