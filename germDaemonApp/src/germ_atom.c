@@ -43,6 +43,7 @@
 #include "udp_conn_atom.h"
 #include "data_write_atom.h"
 #include "data_proc_atom.h"
+#include "mover.h"
 #include "log.h"
 
 
@@ -70,7 +71,7 @@ char ca_dtype[7][11] = { "DBR_STRING",
 uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 
-atomic_flag   count = ATOMIC_FLAG_INIT;
+atomic_char   count = ATOMIC_VAR_INIT(0);
 char          tmp_datafile_dir[MAX_FILENAME_LEN];
 char          datafile_dir[MAX_FILENAME_LEN];
 char          filename[MAX_FILENAME_LEN];
@@ -585,6 +586,7 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    //-------------------------------------------------------------------
     // Create udp_conn_thread to configure FPGA and receive data through
     // UDP connection.
     //do
@@ -607,6 +609,7 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    //-------------------------------------------------------------------
     // Create data_write_thread to save raw data files.
     //do
     //{
@@ -628,6 +631,29 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    //-------------------------------------------------------------------
+    // Create mover_thread to save raw data files.
+    //do
+    //{
+    //    nanosleep(&t1, &t2);
+    //} while(0 == udp_conn_thread_ready);
+
+    log("creating mover_thread...\n");
+    while(1)
+    {
+        status = pthread_create(&tid[2], NULL, &mover_thread, NULL);
+        if ( 0 == status)
+        {
+            log("mover_thread created.\n");
+            break;
+        }
+
+        err("Can't create mover_thread: [%s]\n",
+	            __func__,
+		strerror(status));
+    }
+
+    //-------------------------------------------------------------------
     // Create data_proc_thread to calculate and save spectra files.
     //do
     //{

@@ -16,7 +16,7 @@
 #include "exp_mon.h"
 #include "log.h"
 
-extern atomic_flag   count;
+extern atomic_char   count;
 extern char          tmp_datafile_dir[MAX_FILENAME_LEN];
 extern char          datafile_dir[MAX_FILENAME_LEN];
 extern char          filename[MAX_FILENAME_LEN];
@@ -248,11 +248,11 @@ void pv_update(struct event_handler_args eha)
         count_status = *(unsigned long*)eha.dbr;
         if(count_status==1)
         {
-            atomic_flag_test_and_set(&count);
+            atomic_store(&count, 1);
         }
         else
         {
-            atomic_flag_clear(&count);
+            atomic_store(&count, 0);
         }
         info("start counting.\n");
     }
