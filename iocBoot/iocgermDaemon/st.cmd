@@ -5,9 +5,7 @@
 
 < envPaths
 
-#< hex-env.cmd
-#< xpd-env.cmd
-< lab-env.cmd
+< unique.cmd
 
 epicsEnvSet("NELM_MCA_GERM384", "1572864")
 epicsEnvSet("NELM_TDC_GERM384", "393216")

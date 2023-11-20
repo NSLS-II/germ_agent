@@ -245,9 +245,9 @@
           </widget>
           <widget type="textentry" version="3.0.0">
             <name>Text Input_1</name>
-            <pv_name>$(Sys)$(Dev).TMP_DATAFILE_DIR</pv_name>
+            <pv_name>$(Sys)$(Dev):TMP_DATAFILE_DIR</pv_name>
             <x>140</x>
-            <y>451</y>
+            <y>486</y>
             <width>428</width>
             <height>25</height>
             <background_color>
@@ -366,7 +366,7 @@
             <name>Label_5</name>
             <text>Temp. datafile dir.</text>
             <x>16</x>
-            <y>447</y>
+            <y>486</y>
             <width>122</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -951,72 +951,11 @@
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
           </widget>
-          <widget type="label" version="2.0.0">
-            <name>Label_10</name>
-            <text>Data FIlename</text>
-            <x>16</x>
-            <y>520</y>
-            <width>164</width>
-            <height>25</height>
-            <vertical_alignment>1</vertical_alignment>
-            <actions>
-            </actions>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
-          <widget type="textentry" version="3.0.0">
-            <name>Text Input_3</name>
-            <pv_name>$(Sys)$(Dev).FNAM</pv_name>
-            <x>140</x>
-            <y>520</y>
-            <width>154</width>
-            <height>25</height>
-            <background_color>
-              <color red="255" green="255" blue="255">
-              </color>
-            </background_color>
-            <horizontal_alignment>2</horizontal_alignment>
-            <actions>
-            </actions>
-            <border_alarm_sensitive>false</border_alarm_sensitive>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
-          <widget type="textupdate" version="2.0.0">
-            <name>Text Update_23</name>
-            <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
-            <x>298</x>
-            <y>520</y>
-            <width>154</width>
-            <height>25</height>
-            <foreground_color>
-              <color red="32" green="74" blue="135" alpha="254">
-              </color>
-            </foreground_color>
-            <background_color>
-              <color red="255" green="255" blue="255">
-              </color>
-            </background_color>
-            <transparent>true</transparent>
-            <horizontal_alignment>1</horizontal_alignment>
-            <vertical_alignment>1</vertical_alignment>
-            <wrap_words>false</wrap_words>
-            <actions>
-            </actions>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
           <widget type="textentry" version="3.0.0">
             <name>Text Input_5</name>
-            <pv_name>$(Sys)$(Dev).DATAFILE_DIR</pv_name>
+            <pv_name>$(Sys)$(Dev):DATAFILE_DIR</pv_name>
             <x>140</x>
-            <y>486</y>
+            <y>525</y>
             <width>428</width>
             <height>25</height>
             <background_color>
@@ -1036,10 +975,71 @@
             <name>Label_11</name>
             <text>Datafile directory</text>
             <x>16</x>
-            <y>486</y>
+            <y>525</y>
             <width>122</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="label" version="2.0.0">
+            <name>Label_10</name>
+            <text>Data FIlename</text>
+            <x>16</x>
+            <y>447</y>
+            <width>164</width>
+            <height>25</height>
+            <vertical_alignment>1</vertical_alignment>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textentry" version="3.0.0">
+            <name>Text Input_3</name>
+            <pv_name>$(Sys)$(Dev).FNAM</pv_name>
+            <x>140</x>
+            <y>447</y>
+            <width>154</width>
+            <height>25</height>
+            <background_color>
+              <color red="255" green="255" blue="255">
+              </color>
+            </background_color>
+            <horizontal_alignment>2</horizontal_alignment>
+            <actions>
+            </actions>
+            <border_alarm_sensitive>false</border_alarm_sensitive>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textupdate" version="2.0.0">
+            <name>Text Update_23</name>
+            <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
+            <x>298</x>
+            <y>447</y>
+            <width>154</width>
+            <height>25</height>
+            <foreground_color>
+              <color red="32" green="74" blue="135" alpha="254">
+              </color>
+            </foreground_color>
+            <background_color>
+              <color red="255" green="255" blue="255">
+              </color>
+            </background_color>
+            <transparent>true</transparent>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+            <wrap_words>false</wrap_words>
             <actions>
             </actions>
             <border_color>
