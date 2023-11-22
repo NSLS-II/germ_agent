@@ -39,8 +39,10 @@
 #include <stdatomic.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
-//#include "ezca.h"
+#endif
 
 #include "germ_atom.h"
 //#include "udp.h"

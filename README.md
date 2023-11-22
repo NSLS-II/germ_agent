@@ -1,16 +1,16 @@
-This repository contains the following content:
+This repository contains the following content for Germanium detector control and UDP data receiving:
 
-- An EPICS IOC that that provides PVs;
+- An EPICS IOC;
   
-- A UDP daemon that receives data from FPGA through a UDP connection and saves data to files;
+- A UDP daemon;
   
-- A Phoebus screen for the detector (in `${IOC-DIR}/opi/` directory).
+- A Phoebus screen (in `opi/` directory).
 
-PV prefix is defined in `${IOC-DIR}/prefix.cfg` file.
+PV prefix is defined in `prefix.cfg` file.
 
 # 1. Build
 
-The software modules are created under EPICS framework using `makeBaseApp` command in Linux, and configured per NSLS2 standard. To build on non-NSLS2 computers, in `configure/RELEASE`, redefine the location of EPICS base (`EPICS_BASE`) and ezca module (`EZCA`).
+The software modules are created under EPICS framework in Linux, and configured per NSLS2 standard. To build on non-NSLS2 computers, redefine the location of EPICS base (`EPICS_BASE`) in `configure/RELEASE`.
 
 # 2. System requirement
 
@@ -20,35 +20,37 @@ The program receives data from 1G Ethernet connection, which causes significant 
 
 ## 3.1 IOC
 
-- Define the beamline specific PV prefix and type of the detector (96, 192, or 384) in `${IOC-DIR}/iocBoot/iocgermDaemon/unique.cmd`.
+- Define the beamline specific PV prefix and type of the detector (96, 192, or 384) in `iocBoot/iocgermDaemon/unique.cmd`.
 
-- Define PV prefix in `prefix.cfg`. It should be identical to the definition in `${IOC-DIR}/iocBoot/iocgermDaemon/unique.cmd`. Follow the format in the existing `prefix.cfg`.
-
-- Start the IOC by running `${IOC-DIR}/st.cmd`.
+- Start the IOC by running `st.cmd`.
 
 #### 3.2.1 PV definition
 
-The values of the following PVs need to be given:
+- Define PV prefix in `prefix.cfg`. It should be identical to the definition in `iocBoot/iocgermDaemon/unique.cmd`. Follow the format in the existing `prefix.cfg`.
 
-- `$(Sys)$(Dev).IPADDR`
-  
-  IP address of the UDP data connection.
+- Assign values to the following PVs:
 
-- `$(Sys)$(Dev).FNAM`
+  - `$(Sys)$(Dev).IPADDR`
   
-  Name of data file. The UDP daemon will append run number and segment number to construct the full names of data files.
+    IP address of the UDP data connection.
 
-- `$(Sys)$(Dev):TMP_DATAFILE_DIR`
+  - `$(Sys)$(Dev).FNAM`
   
-  Temporary location of data files. A directory on a RAM disk is preffered. Be sure the user running the UDP daemon have write access to it.
+    Name of data file. The UDP daemon will append run number and segment number to construct the full names of data files.
 
-- `$(Sys)$(Dev):DATAFILE_DIR`
+  - `$(Sys)$(Dev):TMP_DATAFILE_DIR`
   
-  Permanent location of the data files. Be sure the user running the UDP daemon have write access to it.
+    Temporary location of data files. A directory on a RAM disk is preffered. Be sure the user running the UDP daemon have write access to it.
+
+  - `$(Sys)$(Dev):DATAFILE_DIR`
+  
+    Permanent location of the data files. Be sure the user running the UDP daemon have write access to it.
 
 ### 3.2 UDP daemon
 
-- Start the Germanium daemon by running `${IOC-DIR}/bin/linux-x86_64/germ_daemon`. Restart the daemon if the detector is rebooted or has the IP address of the UDP data connection is changed.
+- Define PV prefix in `prefix.cfg`. It should be identical to the definition in `iocBoot/iocgermDaemon/unique.cmd`. Follow the format in the existing `prefix.cfg`.
+
+- Start the Germanium daemon by running `bin/linux-x86_64/germ_daemon`. Restart the daemon if the detector is rebooted or has the IP address of the UDP data connection is changed.
 
 ### 3.3 Phoebus screen
 

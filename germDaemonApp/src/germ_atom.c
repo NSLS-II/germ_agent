@@ -36,7 +36,10 @@
 #include <sched.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
+#endif
 
 #include "germ_atom.h"
 #include "exp_mon.h"

@@ -15,8 +15,10 @@
 #include <sys/stat.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
-//#include "ezca.h"
+#endif
 
 #include "germ_atom.h"
 #include "mover.h"
