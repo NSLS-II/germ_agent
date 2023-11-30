@@ -263,7 +263,7 @@ void pv_update(struct event_handler_args eha)
     {
         memset(tmp_datafile_dir, 0, MAX_FILENAME_LEN);
         strcpy(tmp_datafile_dir, eha.dbr);
-        log("new directory is %s\n", tmp_datafile_dir);
+        info("new temp data directory is %s\n", tmp_datafile_dir);
         //file_name_gen();
     }
     //datafile_dir
@@ -271,7 +271,7 @@ void pv_update(struct event_handler_args eha)
     {
         memset(datafile_dir, 0, MAX_FILENAME_LEN);
         strcpy(datafile_dir, eha.dbr);
-        log("new directory is %s\n", datafile_dir);
+        info("new data directory is %s\n", datafile_dir);
         //file_name_gen();
     }
     //filename
@@ -279,7 +279,7 @@ void pv_update(struct event_handler_args eha)
     {
         memset(filename, 0, MAX_FILENAME_LEN);
         strcpy(filename, eha.dbr);
-        log("new filename is %s\n", filename);
+        info("new filename is %s\n", filename);
         pv_put(PV_FILENAME_RBV);
         //file_name_gen();
     }

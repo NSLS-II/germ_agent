@@ -170,8 +170,8 @@ void lock_buff_read(uint8_t idx, char check_val, const char* caller)
         pthread_mutex_unlock(&packet_buff[idx].mutex);
         log("%s - buffer doesn't have new data\n", caller, idx);
         //sched_yield();
-        //pthread_yield();
-        nanosleep(&t1, &t2);
+        pthread_yield();
+        //nanosleep(&t1, &t2);
     }
     log("%s - buff[%d] locked\n", caller, idx);
 }
@@ -209,8 +209,8 @@ void lock_buff_write(uint8_t idx, char check_val, const char* caller)
         pthread_mutex_unlock(&packet_buff[idx].mutex);
         err("%s - buff[%d] hasn't been read\n", caller, idx);
         //sched_yield();
-        //pthread_yield();
-        nanosleep(&t1, &t2);
+        pthread_yield();
+        //nanosleep(&t1, &t2);
     }
     log("%s - buff[%d] locked\n", caller, idx);
 }
@@ -314,7 +314,8 @@ int pv_array_init(void)
     memset(pv_suffix, 0, sizeof(pv_suffix));
     memset(pv_suffix, 0, sizeof(pv_suffix));
     memcpy(pv_suffix[PV_COUNT],            ".CNT",                 4);
-    memcpy(pv_suffix[PV_DATAFILE_DIR],     ":DATAFILE_DIR",       12);
+    memcpy(pv_suffix[PV_TMP_DATAFILE_DIR], ":TMP_DATAFILE_DIR",   17);
+    memcpy(pv_suffix[PV_DATAFILE_DIR],     ":DATAFILE_DIR",       13);
     memcpy(pv_suffix[PV_FILENAME],         ".FNAM",                5);
     memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV",            9);
     memcpy(pv_suffix[PV_FILESIZE],         ":FSIZ",                5);
@@ -638,7 +639,9 @@ int main(int argc, char* argv[])
     // Create mover_thread to save raw data files.
     //do
     //{
-    //    nanosleep(&t1, &t2);
+    t1.tv_sec  = 5;
+    t1.tv_nsec = 0;
+    nanosleep(&t1, &t2);
     //} while(0 == udp_conn_thread_ready);
 
     log("creating mover_thread...\n");

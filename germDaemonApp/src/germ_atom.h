@@ -9,7 +9,7 @@
 #include <cadef.h>
 
 #define RETRY_ON_FAILURE  5
-#define MAX_FILENAME_LEN  64
+#define MAX_FILENAME_LEN  128
 #define PREFIX_CFG_FILE  "prefix.cfg"
 
 

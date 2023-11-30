@@ -6,6 +6,9 @@ record(stringin, "$(Sys)$(Dev):IPADDR_RBV") {
 record(stringin, "$(Sys)$(Dev):DATAFILE_DIR") {
 }
 
+record(stringin, "$(Sys)$(Dev):TMP_DATAFILE_DIR") {
+}
+
 record(stringin, "$(Sys)$(Dev):FNAM_RBV") {
 }
 

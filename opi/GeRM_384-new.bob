@@ -1006,13 +1006,13 @@
             <pv_name>$(Sys)$(Dev).FNAM</pv_name>
             <x>140</x>
             <y>447</y>
-            <width>154</width>
+            <width>214</width>
             <height>25</height>
             <background_color>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>2</horizontal_alignment>
+            <horizontal_alignment>1</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1024,9 +1024,9 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_23</name>
             <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
-            <x>298</x>
+            <x>354</x>
             <y>447</y>
-            <width>154</width>
+            <width>214</width>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">

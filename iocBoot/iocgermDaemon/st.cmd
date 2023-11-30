@@ -28,3 +28,5 @@ dbLoadRecords("db/germ.db","Sys=$(SYS), Dev=$(DEV), NELM_MCA=$(NELM_MCA_GERM${NE
 iocInit()
 
 dbl
+
+dbpf $(SYS)$(DEV):TMP_DATAFILE_DIR /data/ramdisk

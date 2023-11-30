@@ -38,8 +38,8 @@ void* mover_thread(void* arg)
 
     char count_status = 0;
 
-    char  src_file[128];
-    char  dest_file[128];
+    char  src_file[MAX_FILENAME_LEN];
+    char  dest_file[MAX_FILENAME_LEN];
 
     char buff[4194304];
     size_t bytes_read, bytes_write;
@@ -49,29 +49,43 @@ void* mover_thread(void* arg)
 
     while(1)
     {
+        if(strlen(tmp_datafile_dir)==0)
+            continue;
+
+        count_status = atomic_load(&count);
         num_files = scandir(tmp_datafile_dir, &namelist, 0, alphasort);
+
+        //printf("%d items found in %s.\n", num_files, tmp_datafile_dir);
+        //for (int i=0; i<num_files; i++)
+        //{
+        //    printf("%d - %s\n", i+1, namelist[i]->d_name);
+        //}
+
         if( num_files > 3 )
         {
-            count_status = atomic_load(&count);
             if( count_status == 1 )
             {
                 free(namelist[--num_files]);  // leave the last file when counting
             }
 
-            free(namelist[0]); // free '.'
-            free(namelist[1]); // free '..'
-
             while (num_files>2)  // 
             {
-                printf("%s\n", namelist[--num_files]->d_name);
+                memset(src_file, 0, MAX_FILENAME_LEN);
+                memset(dest_file, 0, MAX_FILENAME_LEN);
     
                 strcat(src_file, tmp_datafile_dir);
                 strcat(src_file, "/");
+
+                printf("src_file = %s\n", src_file);
+                printf("filename = %s\n", namelist[num_files]->d_name);
                 strcat(src_file, namelist[num_files]->d_name);
     
                 strcat(dest_file, datafile_dir);
                 strcat(dest_file, "/");
                 strcat(dest_file, namelist[num_files]->d_name);
+    
+                //printf("Moving %s\n", namelist[--num_files]->d_name);
+                printf("Moving %s\n", src_file);
     
 #ifdef _COPY_DELETE_
                 src_fp = fopen(src_file, "rb");
@@ -114,12 +128,14 @@ void* mover_thread(void* arg)
                     perror("failed to move file\n");
                 }
 #endif
-                memset(src_file, 0, 128);
-                memset(dest_file, 0, 128);
-    
                 free(namelist[num_files]);
             }
+
+            free(namelist[0]); // free '.'
+            free(namelist[1]); // free '..'
+
             free(namelist);
+            pthread_yield();
         }
 
         pthread_yield();

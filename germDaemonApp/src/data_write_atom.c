@@ -60,7 +60,8 @@ extern packet_buff_t packet_buff[NUM_PACKET_BUFF];
     
 extern pv_obj_t pv[NUM_PVS];
 
-extern char         filename[MAX_FILENAME_LEN];
+extern char  filename[MAX_FILENAME_LEN];
+extern char  tmp_datafile_dir[MAX_FILENAME_LEN];
 
 extern unsigned int runno;
 extern uint16_t     filesize;  // in Megabyte
@@ -75,18 +76,30 @@ void create_datafile_name(char * datafile, uint32_t run_num, uint32_t file_segme
 
     memset(datafile, 0, MAX_FILENAME_LEN);
 
+    printf("Dir = %s\n", tmp_datafile_dir);
+
+    // directory from PV
+    strcpy(datafile, tmp_datafile_dir);
+    strcat(datafile, "/");
+
     // filename from PV
-    strcpy(datafile, filename);
+    //strcpy(datafile+strlen(datafile), filename);
+    strcat(datafile, filename);
     
     // run number
     sprintf(run, ".%010u", run_num);
-    memcpy(datafile+strlen(datafile), run, strlen(run));
+    //memcpy(datafile+strlen(datafile), run, strlen(run));
+    strcat(datafile, run);
 
     // file segment number
     sprintf(file_seg, ".%010u", file_segment);
-    memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
+    //memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
+    strcat(datafile, file_seg);
     
-    strcpy(datafile+strlen(datafile), ".bin");
+    //strcpy(datafile+strlen(datafile), ".bin");
+    strcat(datafile, ".bin");
+
+    printf("Data file name is %s\n", datafile);
 
     return;
 }
@@ -228,7 +241,7 @@ void* data_write_thread(void* arg)
             
             if(fp)
             {
-                //printf("Writing %u from buff[%d] to file...\n", packet_length<<2, read_buff);
+                //printf("Writing %u from buff[%d] to file %s\n", packet_length<<2, read_buff, datafile);
                 fwrite(packet, packet_length << 2, 1, fp);
                 file_written += packet_length << 2;
 
@@ -271,6 +284,7 @@ void* data_write_thread(void* arg)
             fp = NULL;
             gettimeofday(&tv_end, NULL);
             log("datafile (new run) written\n"); 
+            printf("datafile %s written\n", datafile); 
 
             file_segment = 0;
             file_written = 0;
@@ -297,7 +311,7 @@ void* data_write_thread(void* arg)
 
         if (packet_counter != num_packets )
         {
-            err("missed %u packets\n", packet_counter - num_packets);
+            err("    missed %u packets\n", packet_counter - num_packets);
         }
         else
         {
@@ -306,11 +320,11 @@ void* data_write_thread(void* arg)
 
         if (0!= num_lost_events)
         {
-            err("%u events lost due to UDP Tx FIFO overflow.\n", num_lost_events);
+            err("    %u events lost due to UDP Tx FIFO overflow.\n", num_lost_events);
         }
         else
         {
-            info("    no overflow detected in UDP Tx FIFO\n");
+            log("    no overflow detected in UDP Tx FIFO\n");
         }
    
     }
