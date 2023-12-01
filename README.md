@@ -38,7 +38,15 @@ The software was created under EPICS framework in Linux, and configured per NSLS
 
 ### 2.3 Phoebus screen
 
-The Germanium detector can be controlled from a Phonebus screen.
+The Germanium detector can be controlled from a Phonebus screen. It should have the following macros defined:
+
+- $(Sys) Should be identical to the value defined in `iocBoot/iocgermDaemon/unique.cmd`.
+  
+- $(Dev) Should be identical to the value defined in `iocBoot/iocgermDaemon/unique.cmd`.
+
+- $(NELM) Depends on the detector type: 96, 192, or 384.
+
+See `opi/Open-GeRM.bob` for examples.
 
 #### 2.3.1 Germanium software set status
 
