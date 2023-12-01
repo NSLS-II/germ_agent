@@ -28,21 +28,11 @@ germDaemon_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 #============================================
 
-## Multi-thread Germanium daemon
-#PROD_HOST += germ_daemon
-##germ_daemon_SRCS     += germ.c udp_conn.c data_write.c data_proc.c exp_mon.c 
-#germ_daemon_SRCS     += germ_atom.c udp_conn_atom.c data_write_atom.c data_proc_atom.c exp_mon_atom.c mover.c
-#germ_daemon_LIBS     += $(EPICS_BASE_HOST_LIBS)
-#germ_daemon_SYS_LIBS += pthread
-
-#============================================
-
-# Multi-thread Germanium daemon (sync)
-PROD_HOST += germ_daemon_sync
-#germ_daemon_SRCS     += germ.c udp_conn.c data_write.c data_proc.c exp_mon.c 
-germ_daemon_sync_SRCS     += germ.c udp_conn.c data_write.c data_proc.c exp_mon.c mover.c
-germ_daemon_sync_LIBS     += $(EPICS_BASE_HOST_LIBS)
-germ_daemon_sync_SYS_LIBS += pthread
+# Multi-thread Germanium daemon
+PROD_HOST += germ_daemon
+germ_daemon_SRCS     += germ.c udp_conn.c data_write.c exp_mon.c 
+germ_daemon_LIBS     += $(EPICS_BASE_HOST_LIBS)
+germ_daemon_SYS_LIBS += pthread
 
 #============================================
 

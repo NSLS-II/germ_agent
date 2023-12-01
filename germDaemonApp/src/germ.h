@@ -73,9 +73,7 @@
 //===========================================================
 
 #define MAX_PV_NAME_LEN       64
-//#define MAX_NELM             384
-#define MAX_NELM             192
-//#define MAX_NELM              96
+#define MAX_NELM             384
 
 #define NUM_PVS               29
 
@@ -132,10 +130,6 @@ typedef struct
 {
     pthread_mutex_t     mutex;
     uint8_t             status;
-//    pthread_spinlock_t  spinlock;
-//    uint32_t            frame_num;
-//    uint16_t            num_lost_event;
-//    atomic_flag         flag;
     uint16_t            length;
     uint32_t            runno;
     uint8_t             packet[MAX_PACKET_LENGTH];
@@ -167,14 +161,9 @@ typedef struct
 //===========================================================
 
 //#define TRACE_CA
-//#define USE_EZCA
-#define EZCA_DEBUG
 
 //###########################################################
 
-#ifdef USE_EZCA
-extern char ca_dtype[6][11];
-#else
 extern char ca_dtype[7][11];
 
 #define ezca_type_to_dbr(t)   (t==ezcaByte)   ? DBR_CHAR   :( \
@@ -184,33 +173,8 @@ extern char ca_dtype[7][11];
                               (t==ezcaFloat)  ? DBR_FLOAT  :( \
                               (t==ezcaDouble) ? DBR_DOUBLE :( \
                               999 ))))))
-#endif
 
 //###########################################################
-
-//===========================================================
-#ifdef USE_EZCA
-//-----------------------------------------------------------
-#ifdef TRACE_CA
-#define pv_get(i)        printf("[%s]: read %s as %s\n", __func__, pv[i].my_name, ca_dtype[pv[i].my_dtype]);\
-                         ezcaGet(pv[i].my_name, pv[i].my_dtype, 1, pv[i].my_var_p);sleep(1)
-#define pv_put(i)        printf("[%s]: write %s as %s\n", __func__, pv[i].my_name, ca_dtype[pv[i].my_dtype]);\
-                         ezcaPut(pv[i].my_name, pv[i].my_dtype, 1, pv[i].my_var_p);sleep(1)
-#define pvs_get(i,n)     printf("[%s]: read %s as %ld %s\n", __func__, pv[i].my_name, n, ca_dtype[pv[i].my_dtype]);\
-                         ezcaGet(pv[i].my_name, pv[i].my_dtype, n, pv[i].my_var_p);sleep(1)
-#define pvs_put(i,n)     printf("[%s]: write %s as %ld %s\n", __func__, pv[i].my_name, n, ca_dtype[pv[i].my_dtype]);\
-                         ezcaPut(pv[i].my_name, pv[i].my_dtype, n, pv[i].my_var_p);sleep(1)
-//-----------------------------------------------------------
-#else
-#define pv_get(i)        ezcaGet(pv[i].my_name, pv[i].my_dtype, 1, pv[i].my_var_p)
-#define pv_put(i)        ezcaPut(pv[i].my_name, pv[i].my_dtype, 1, pv[i].my_var_p)
-#define pvs_get(i, n)    ezcaGet(pv[i].my_name, pv[i].my_dtype, n, pv[i].my_var_p)
-#define pvs_put(i, n)    ezcaPut(pv[i].my_name, pv[i].my_dtype, n, pv[i].my_var_p)
-//-----------------------------------------------------------
-#endif // ifdef TRACE_CA
-//===========================================================
-#else
-//-----------------------------------------------------------
 #ifdef TRACE_CA
 #define pv_get(i)                                                                               \
     printf("[%s]: read %s as %s\n", __func__, pv[i].my_name, ca_dtype[pv[i].my_dtype]);         \
@@ -251,7 +215,6 @@ extern char ca_dtype[7][11];
 //-----------------------------------------------------------
 #endif // ifdef TRACE_CA
 //===========================================================
-#endif // ifdef USE_EZCA
 
 //###########################################################
 
@@ -268,14 +231,15 @@ extern char ca_dtype[7][11];
 
 long int time_elapsed(struct timeval time_i, struct timeval time_f);
 
-//inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p);
-//inline void write_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p);
-
 //========================================================================
 // Read a mutex protected string.
 //========================================================================
-inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+inline void read_protected_string( char * src,
+                                   char * dest,
+                                   unsigned char len,
+                                   pthread_mutex_t * mutex_p )
 {
+    memset(dest, 0, len);
     log("lock mutex for read.\n");
     pthread_mutex_lock(mutex_p);
     strcpy(dest, src);
@@ -286,10 +250,14 @@ inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mut
 //========================================================================
 // Write a mutex protected string.
 //========================================================================
-inline void write_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+inline void write_protected_string( char * src,
+                                    char * dest,
+                                    unsigned char len,
+                                    pthread_mutex_t * mutex_p )
 {
     log("lock mutex for write.\n");
     pthread_mutex_lock(mutex_p);
+    memset(dest, 0, len);
     strcpy(dest, src);
     pthread_mutex_unlock(mutex_p);
     log("mutex unlocked\n");

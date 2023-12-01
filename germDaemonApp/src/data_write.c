@@ -46,12 +46,7 @@
 
 #include <cadef.h>
 
-#ifdef USE_EZCA
-#include <ezca.h>
-#endif
-
 #include "germ.h"
-//#include "udp.h"
 #include "data_write.h"
 #include "log.h"
 
@@ -81,7 +76,7 @@ void create_datafile_name(char * datafile, uint32_t run_num, uint32_t file_segme
 
     memset(datafile, 0, MAX_FILENAME_LEN);
     
-    read_protected_string(tmp_datafile_dir, tmp_datafile_dir_val, &tmp_datafile_dir_lock);
+    read_protected_string(tmp_datafile_dir, tmp_datafile_dir_val, MAX_FILENAME_LEN, &tmp_datafile_dir_lock);
     printf("Temp Dir = %s, located at %p\n", tmp_datafile_dir_val, (void*)tmp_datafile_dir);
 
     // directory from PV
@@ -89,21 +84,17 @@ void create_datafile_name(char * datafile, uint32_t run_num, uint32_t file_segme
     strcat(datafile, "/");
 
     // filename from PV
-    //strcpy(datafile+strlen(datafile), filename);
-    read_protected_string(filename, filename_val, &filename_lock);
+    read_protected_string(filename, filename_val, MAX_FILENAME_LEN, &filename_lock);
     strcat(datafile, filename_val);
     
     // run number
     sprintf(run, ".%010u", run_num);
-    //memcpy(datafile+strlen(datafile), run, strlen(run));
     strcat(datafile, run);
 
     // file segment number
     sprintf(file_seg, ".%010u", file_segment);
-    //memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
     strcat(datafile, file_seg);
     
-    //strcpy(datafile+strlen(datafile), ".bin");
     strcat(datafile, ".bin");
 
     printf("Data file name is %s\n", datafile);
@@ -190,11 +181,6 @@ void* data_write_thread(void* arg)
 
             packet_counter = ntohl(packet[0]);
 
-	    //for(int i=0; i<packet_length; i++)
-	    //{
-  		//    printf("0x%08x\n", ntohl(packet[i]));
-	    //}
-
             //-------------------------------------------------
             // check if it's the 1st or last packet of a frame
             if (ntohl(packet[2]) == SOF_MARKER) // first packet
@@ -248,7 +234,6 @@ void* data_write_thread(void* arg)
             
             if(fp)
             {
-                //printf("Writing %u from buff[%d] to file %s\n", packet_length<<2, read_buff, datafile);
                 fwrite(packet, packet_length << 2, 1, fp);
                 file_written += packet_length << 2;
 

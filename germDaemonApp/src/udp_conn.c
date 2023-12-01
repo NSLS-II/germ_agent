@@ -40,20 +40,12 @@
 
 #include <cadef.h>
 
-#ifdef USE_EZCA
-#include <ezca.h>
-#endif
-
 #include "germ.h"
-//#include "udp.h"
 #include "udp_conn.h"
 #include "log.h"
 
 
 //event data buffer for a frame
-//uint16_t evtdata[500000000];
-//uint32_t evtdata[20000000];
-//frame_buff_t frame_buff[NUM_FRAME_BUFF];
 extern packet_buff_t packet_buff[NUM_PACKET_BUFF];
 
 /* arrays for energy and time spectra */
@@ -71,8 +63,6 @@ const char  *GIGE_ERROR_STRING[] = { "",
 
 
 extern uint32_t reg1_val;
-
-//extern unsigned char read_buff, write_buff;
 
 extern char     filename[MAX_FILENAME_LEN];
 extern uint32_t runno;
@@ -103,7 +93,6 @@ struct sockaddr_in *find_addr_from_iface(char *iface)
     getifaddrs (&ifap);
     for (ifa = ifap; ifa; ifa = ifa->ifa_next)
     {
-        //log("IP address of %s is %s\n", ifa->ifa_name);
         if (ifa->ifa_addr->sa_family==AF_INET)
         {
             if ( 0 == strcmp(iface, ifa->ifa_name))
@@ -342,7 +331,6 @@ gige_data_t *gige_data_init(uint16_t reb_id, char *iface)
     
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s", gige_ip_addr); /*GIGE_CLIENT_IP);*/ 
-    //sprintf(ret->client_ip_addr, "%s", "172.16.0.215"); /*GIGE_CLIENT_IP);*/ 
     log("gige_ip_addr = %s\n", gige_ip_addr);
     log("init with IP address %s\n", ret->client_ip_addr);    
 
@@ -370,7 +358,6 @@ gige_data_t *gige_data_init(uint16_t reb_id, char *iface)
     int size = 145000000;
     if (setsockopt(ret->sock, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) == -1) {
         err("Error setting socket opts: %s\n", strerror(errno));
-        //log("error setting socket opts: %s\n", strerror(errno));
     }
     
     // Bind to Register RX Port
@@ -413,9 +400,6 @@ int8_t gige_data_recv(gige_data_t *dat, packet_buff_t* buff_p)
     gettimeofday(&tv_end, NULL);
     log( "received %u bytes\n",
          buff_p->length );
-//    log( "received %u bytes in %f sec\n",
-//         buff_p->length,
-//         (float)(time_elapsed(tv_begin, tv_end)/1e6) );
 
     buff_p->runno = runno;
     tv_begin = tv_end;
@@ -458,17 +442,6 @@ void* udp_conn_thread(void* arg)
     } while(0 == atomic_load(&exp_mon_thread_ready));
 
     log("########## Initializing udp_conn_thread ##########\n");
-
-//    for(int i=0; i<NUM_PACKET_BUFF; i++)
-//    {
-//        if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
-//        {
-//            log("\nmutex init failed!\n");
-//            pthread_exit(NULL);
-//        }
-//        packet_buff[i].flag = 3;  // preset the flags
-//        log("buff[%d].flag = %d\n", i, packet_buff[i].flag);
-//    }
 
     log("the IP address of the UDP port on the detector is %s\n",
         (char*)pv[PV_IPADDR].my_var_p);
@@ -515,7 +488,6 @@ void* udp_conn_thread(void* arg)
         buff_p = &(packet_buff[write_buff]);
 
         log("write to buff[%d]\n", write_buff);
-        //lock_buff_write(write_buff, DATA_WRITTEN|DATA_PROCCED, __func__);
         lock_buff_write(write_buff, DATA_WRITTEN, __func__);
 
         while(gige_data_recv(dat, buff_p) ); // loop until receive is successful

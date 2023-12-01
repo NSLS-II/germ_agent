@@ -243,26 +243,6 @@
               </color>
             </border_color>
           </widget>
-          <widget type="textentry" version="3.0.0">
-            <name>Text Input_1</name>
-            <pv_name>$(Sys)$(Dev):TMP_DATAFILE_DIR</pv_name>
-            <x>140</x>
-            <y>486</y>
-            <width>428</width>
-            <height>25</height>
-            <background_color>
-              <color red="255" green="255" blue="255">
-              </color>
-            </background_color>
-            <horizontal_alignment>2</horizontal_alignment>
-            <actions>
-            </actions>
-            <border_alarm_sensitive>false</border_alarm_sensitive>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
           <widget type="label" version="2.0.0">
             <name>Label_4</name>
             <text>Run No.</text>
@@ -355,21 +335,6 @@
             <width>80</width>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
-            <actions>
-            </actions>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
-          <widget type="label" version="2.0.0">
-            <name>Label_5</name>
-            <text>Temp. datafile dir.</text>
-            <x>16</x>
-            <y>486</y>
-            <width>122</width>
-            <height>25</height>
-            <vertical_alignment>1</vertical_alignment>
             <actions>
             </actions>
             <border_color>
@@ -512,8 +477,8 @@
           </widget>
           <widget type="xyplot" version="3.0.0">
             <name>XY Graph</name>
-            <x>803</x>
-            <y>13</y>
+            <x>808</x>
+            <y>6</y>
             <height>270</height>
             <background_color>
               <color red="240" green="240" blue="240">
@@ -589,8 +554,8 @@
           </widget>
           <widget type="xyplot" version="3.0.0">
             <name>XY Graph</name>
-            <x>803</x>
-            <y>293</y>
+            <x>808</x>
+            <y>306</y>
             <height>270</height>
             <background_color>
               <color red="240" green="240" blue="240">
@@ -755,8 +720,8 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_28</name>
             <pv_name>$(Sys)$(Dev):IPADDR_RBV</pv_name>
-            <x>298</x>
-            <y>411</y>
+            <x>138</x>
+            <y>436</y>
             <width>154</width>
             <height>25</height>
             <foreground_color>
@@ -951,46 +916,11 @@
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
           </widget>
-          <widget type="textentry" version="3.0.0">
-            <name>Text Input_5</name>
-            <pv_name>$(Sys)$(Dev):DATAFILE_DIR</pv_name>
-            <x>140</x>
-            <y>525</y>
-            <width>428</width>
-            <height>25</height>
-            <background_color>
-              <color red="255" green="255" blue="255">
-              </color>
-            </background_color>
-            <horizontal_alignment>2</horizontal_alignment>
-            <actions>
-            </actions>
-            <border_alarm_sensitive>false</border_alarm_sensitive>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
-          <widget type="label" version="2.0.0">
-            <name>Label_11</name>
-            <text>Datafile directory</text>
-            <x>16</x>
-            <y>525</y>
-            <width>122</width>
-            <height>25</height>
-            <vertical_alignment>1</vertical_alignment>
-            <actions>
-            </actions>
-            <border_color>
-              <color red="0" green="128" blue="255">
-              </color>
-            </border_color>
-          </widget>
           <widget type="label" version="2.0.0">
             <name>Label_10</name>
             <text>Data FIlename</text>
             <x>16</x>
-            <y>447</y>
+            <y>486</y>
             <width>164</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -1005,14 +935,14 @@
             <name>Text Input_3</name>
             <pv_name>$(Sys)$(Dev).FNAM</pv_name>
             <x>140</x>
-            <y>447</y>
-            <width>214</width>
+            <y>486</y>
+            <width>440</width>
             <height>25</height>
             <background_color>
               <color red="255" green="255" blue="255">
               </color>
             </background_color>
-            <horizontal_alignment>1</horizontal_alignment>
+            <horizontal_alignment>2</horizontal_alignment>
             <actions>
             </actions>
             <border_alarm_sensitive>false</border_alarm_sensitive>
@@ -1024,9 +954,9 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_23</name>
             <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
-            <x>354</x>
-            <y>447</y>
-            <width>214</width>
+            <x>140</x>
+            <y>514</y>
+            <width>440</width>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -1037,7 +967,7 @@
               </color>
             </background_color>
             <transparent>true</transparent>
-            <horizontal_alignment>1</horizontal_alignment>
+            <horizontal_alignment>2</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
             <actions>
@@ -1051,8 +981,8 @@
             <name>LED_5</name>
             <pv_name>$(Sys)$(Dev):ONLINE</pv_name>
             <bit>0</bit>
-            <x>728</x>
-            <y>567</y>
+            <x>388</x>
+            <y>436</y>
             <width>24</width>
             <height>22</height>
             <off_color>
@@ -1079,9 +1009,47 @@
           <widget type="label" version="2.0.0">
             <name>Label_13</name>
             <text>UDP Ready</text>
-            <x>688</x>
-            <y>543</y>
+            <x>348</x>
+            <y>408</y>
             <height>25</height>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+            <wrap_words>false</wrap_words>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="label" version="2.0.0">
+            <name>Label_14</name>
+            <text>HV Bias</text>
+            <x>478</x>
+            <y>408</y>
+            <width>90</width>
+            <height>25</height>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+            <wrap_words>false</wrap_words>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textupdate" version="2.0.0">
+            <name>Text Update_13</name>
+            <pv_name>$(Sys)$(Dev):HV_RBV</pv_name>
+            <x>478</x>
+            <y>436</y>
+            <width>90</width>
+            <height>25</height>
+            <foreground_color>
+              <color red="32" green="74" blue="135">
+              </color>
+            </foreground_color>
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
