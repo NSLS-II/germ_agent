@@ -33,15 +33,20 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <sched.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
+#endif
 
 #include "germ.h"
 #include "exp_mon.h"
 #include "udp_conn.h"
 #include "data_write.h"
 #include "data_proc.h"
+#include "mover.h"
 #include "log.h"
 
 
@@ -69,13 +74,23 @@ char ca_dtype[7][11] = { "DBR_STRING",
 uint16_t mca[NUM_MCA_ROW * NUM_MCA_COL];
 uint16_t tdc[NUM_TDC_ROW * NUM_TDC_COL];
 
+atomic_char   count = ATOMIC_VAR_INIT(0);
+char          tmp_datafile_dir[MAX_FILENAME_LEN];
+char          datafile_dir[MAX_FILENAME_LEN];
 char          filename[MAX_FILENAME_LEN];
 char          datafile_run[MAX_FILENAME_LEN];
 char          spectrafile_run[MAX_FILENAME_LEN];
 char          datafile[MAX_FILENAME_LEN];
 char          spectrafile[MAX_FILENAME_LEN];
-unsigned long filesize = 0;
-unsigned long runno = 0;
+//unsigned long filesize = 0;
+//unsigned long runno = 0;
+atomic_ulong filesize = 0;
+atomic_ulong runno = 0;
+
+pthread_mutex_t tmp_datafile_dir_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t datafile_dir_lock     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t filename_lock         = PTHREAD_MUTEX_INITIALIZER;
+
 
 unsigned int  nelm = 0;
 unsigned int  monch = 0;
@@ -92,9 +107,9 @@ char          directory[64];
 
 unsigned int  watchdog = 0;
 
-uint8_t exp_mon_thread_ready    = 0;
-uint8_t udp_conn_thread_ready   = 0;
-uint8_t data_write_thread_ready = 0;
+atomic_char exp_mon_thread_ready    = ATOMIC_VAR_INIT(0);
+atomic_char udp_conn_thread_ready   = ATOMIC_VAR_INIT(0);
+atomic_char data_write_thread_ready = ATOMIC_VAR_INIT(0);
 
 //========================================================================
 // Calculate elapsed time.
@@ -105,6 +120,139 @@ long int time_elapsed(struct timeval time_i, struct timeval time_f)
 }
 
 
+////========================================================================
+//// Read a mutex protected string.
+////========================================================================
+//inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+//{
+//    pthread_mutex_lock(mutex_p);
+//    strcpy(dest, src);
+//    pthread_mutex_lock(mutex_p);
+//}
+//
+////========================================================================
+//// Write a mutex protected string.
+////========================================================================
+//inline void write_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+//{
+//    pthread_mutex_lock(mutex_p);
+//    strcpy(dest, src);
+//    pthread_mutex_lock(mutex_p);
+//}
+
+//========================================================================
+// Initialize packet buffer.
+//========================================================================
+void buff_init(void)    //packet_buff_t buff_p;
+{
+    for(int i=0; i<NUM_PACKET_BUFF; i++)
+    {
+    //    packet_buff_t *buff_p = &packet_buff[i];
+    //    packet_buff[idx].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    //    packet_buff[idx].flag = DATA_WRITE_MASK | DATA_PROC_MASK;
+    //    packet_buff[i].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+        pthread_mutex_init(&packet_buff[i].mutex, NULL);
+        //if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
+        //{
+        //    log("\nmutex init failed!\n");
+        //    return(-1);
+        //}
+        //packet_buff[i].flag = DATA_WRITE_MASK | DATA_PROC_MASK;  // preset the flags
+        //atomic_init(&packet_buff[i].flag, DATA_WRITE_MASK | DATA_PROC_MASK);  // preset the flags
+        //pthread_spin_init(&packet_buff[i].spinlock, PTHREAD_PROCESS_SHARED);
+        //packet_buff[i].flag = (atomic_flag)ATOMIC_FLAG_INIT;
+        //log("buff[%d].flag = %d\n", i, packet_buff[i].flag);
+        packet_buff[i].status = DATA_WRITTEN | DATA_PROCCED;
+        log("buff[%d].status = %d\n", i, packet_buff[i].status);
+    } 
+}
+
+//========================================================================
+// Lock a buffer for read.
+//========================================================================
+void lock_buff_read(uint8_t idx, char check_val, const char* caller)
+{
+    struct timespec t1, t2;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 10;
+    while(1)
+    {
+        log("%s - locking buff[%d]...\n", caller, idx);
+        //while(atomic_flag_test_and_set(&packet_buff[idx].flag))
+        //{
+        //    sched_yield();
+        //}
+        //pthread_spin_lock(&packet_buff[idx].spinlock);
+        pthread_mutex_lock(&packet_buff[idx].mutex);
+
+        log("%s - buff[%d] data check...\n", caller, idx)
+        log("%s - buff[%d] status is 0x%x against check value 0x%x\n", caller, idx, packet_buff[idx].status, check_val);
+        if( !(packet_buff[idx].status & check_val) )
+        {
+            log("%s - buff[%d] ready for read\n", caller, idx);
+            break;
+        }
+        //atomic_flag_clear(&packet_buff[idx].flag);
+        //pthread_spin_unlock(&packet_buff[idx].spinlock);
+        pthread_mutex_unlock(&packet_buff[idx].mutex);
+        log("%s - buffer doesn't have new data\n", caller, idx);
+        //sched_yield();
+        pthread_yield();
+        //nanosleep(&t1, &t2);
+    }
+    log("%s - buff[%d] locked\n", caller, idx);
+}
+
+
+//========================================================================
+// Lock a buffer for write.
+//========================================================================
+void lock_buff_write(uint8_t idx, char check_val, const char* caller)
+{
+    struct timespec t1, t2;
+    t1.tv_sec  = 0;
+    t1.tv_nsec = 10;
+
+    while(1)
+    {
+        log("%s - locking buff[%d]...\n", caller, idx);
+        //while(atomic_flag_test_and_set(&packet_buff[idx].flag))
+        //{
+        //    sched_yield();
+        //}
+        //pthread_spin_lock(&packet_buff[idx].spinlock);
+        pthread_mutex_lock(&packet_buff[idx].mutex);
+
+        log("%s - buff[%d] data check...\n", caller, idx)
+        log("%s - buff[%d] status is 0x%x against check value 0x%x\n",
+            caller, idx, packet_buff[idx].status, check_val);
+        if( (packet_buff[idx].status & check_val) == check_val )
+        {
+            log("%s - buff[%d] ready for write\n", caller, idx);
+            break;
+        }
+        //atomic_flag_clear(&packet_buff[idx].flag);
+        //pthread_spin_unlock(&packet_buff[idx].spinlock);
+        pthread_mutex_unlock(&packet_buff[idx].mutex);
+        err("%s - buff[%d] hasn't been read\n", caller, idx);
+        //sched_yield();
+        pthread_yield();
+        //nanosleep(&t1, &t2);
+    }
+    log("%s - buff[%d] locked\n", caller, idx);
+}
+
+
+//========================================================================
+// Unlock a buffer.
+//========================================================================
+void unlock_buff(uint8_t idx, const char* caller)
+{
+    //atomic_flag_clear(packet_buff[idx].flag);
+    //pthread_spin_unlock(packet_buff[idx].spinlock);
+    pthread_mutex_unlock(&packet_buff[idx].mutex);
+    log("%s - buff[%d] unlocked\n", caller, idx);
+}
 
 //========================================================================
 // Create channels for PVs.
@@ -114,12 +262,27 @@ void create_channel(const char * thread, unsigned int first_pv, unsigned int las
     int status;
     for (int i=first_pv; i<=last_pv; i++)
     {   
-        log("creating CA channel for %s (%s)...\n", pv[i].my_name, thread);
-        status = ca_create_channel(pv[i].my_name, NULL, NULL, 0, &pv[i].my_chid);
+        info("creating CA channel for %s (%s)...\n", pv[i].my_name, thread);
+        //for (int j=0; j<8; j++)
+        //{
+            status = ca_create_channel(pv[i].my_name, NULL, NULL, 0, &pv[i].my_chid);
+        //    if (1==ECA_NORMAL)
+        //    {
+        //        break;
+        //    }
+        //    sleep(1);
+        //}
         SEVCHK(status, "Create channel failed");
-        status = ca_pend_io(1.0);
+        //for (int j=0; j<8; j++)
+        //{
+            status = ca_pend_io(1.0);
+        //    if (1==ECA_NORMAL)
+        //    {
+        //        break;
+        //    }
+        //    sleep(1);
+        //}
         SEVCHK(status, "Channel connection failed");
-        //sleep(1);
     }   
     //printf("[%s]: finished creating CA channels.\n", thread);
 }
@@ -177,6 +340,9 @@ int pv_array_init(void)
     //--------------------------------------------------
     memset(pv_suffix, 0, sizeof(pv_suffix));
     memset(pv_suffix, 0, sizeof(pv_suffix));
+    memcpy(pv_suffix[PV_COUNT],            ".CNT",                 4);
+    memcpy(pv_suffix[PV_TMP_DATAFILE_DIR], ":TMP_DATAFILE_DIR",   17);
+    memcpy(pv_suffix[PV_DATAFILE_DIR],     ":DATAFILE_DIR",       13);
     memcpy(pv_suffix[PV_FILENAME],         ".FNAM",                5);
     memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV",            9);
     memcpy(pv_suffix[PV_FILESIZE],         ":FSIZ",                5);
@@ -218,43 +384,49 @@ int pv_array_init(void)
                 pv_suffix[i],
                 strlen(pv_suffix[i]));
 
-        printf("%s\n", pv[i].my_name);
+        log("%s\n", pv[i].my_name);
     }
 
     //--------------------------------------------------
     // Pointers to variables
     //--------------------------------------------------
-    pv[PV_FILENAME].my_var_p      = (void*)filename;
-    pv[PV_FILENAME_RBV].my_var_p  = (void*)filename;
-    pv[PV_FILESIZE].my_var_p      = (void*)(&filesize);
-    pv[PV_FILESIZE_RBV].my_var_p  = (void*)(&filesize);
-    pv[PV_RUNNO].my_var_p         = (void*)(&runno);
-    pv[PV_RUNNO_RBV].my_var_p     = (void*)(&runno);
-    pv[PV_IPADDR].my_var_p        = (void*)(&gige_ip_addr);
-    pv[PV_IPADDR_RBV].my_var_p    = (void*)(&gige_ip_addr);
-    pv[PV_NELM].my_var_p          = (void*)(&nelm);
-    pv[PV_NELM_RBV].my_var_p      = (void*)(&nelm);
-    pv[PV_MONCH].my_var_p         = (void*)(&monch);
-    pv[PV_MONCH_RBV].my_var_p     = (void*)(&monch);
-    pv[PV_PID].my_var_p           = (void*)(&pid);
-    pv[PV_HOSTNAME].my_var_p      = (void*)hostname;
-    pv[PV_DIR].my_var_p           = (void*)directory;
-    pv[PV_WATCHDOG].my_var_p      = (void*)(&watchdog);
-    pv[PV_MCA].my_var_p           = (void*)(&mca);
-    pv[PV_TDC].my_var_p           = (void*)(&tdc);
-    pv[PV_TSEN_PROC].my_var_p     = (void*)(&tsen_proc);
-    pv[PV_CHEN_PROC].my_var_p     = (void*)(&chen_proc);
-    pv[PV_TSEN_CTRL].my_var_p     = (void*)(&tsen_ctrl);
-    pv[PV_CHEN_CTRL].my_var_p     = (void*)(&chen_ctrl);
-    pv[PV_TSEN].my_var_p          = (void*)(&tsen);
-    pv[PV_CHEN].my_var_p          = (void*)(&chen);
-    pv[PV_DATA_FILENAME].my_var_p = (void*)datafile;
-    pv[PV_SPEC_FILENAME].my_var_p = (void*)spectrafile;
+    //pv[PV_COUNT].my_var_p            = (void*)count;
+    pv[PV_TMP_DATAFILE_DIR].my_var_p = (void*)tmp_datafile_dir;
+    pv[PV_DATAFILE_DIR].my_var_p     = (void*)datafile_dir;
+    pv[PV_FILENAME].my_var_p         = (void*)filename;
+    pv[PV_FILENAME_RBV].my_var_p     = (void*)filename;
+    pv[PV_FILESIZE].my_var_p         = (void*)(&filesize);
+    pv[PV_FILESIZE_RBV].my_var_p     = (void*)(&filesize);
+    pv[PV_RUNNO].my_var_p            = (void*)(&runno);
+    pv[PV_RUNNO_RBV].my_var_p        = (void*)(&runno);
+    pv[PV_IPADDR].my_var_p           = (void*)(&gige_ip_addr);
+    pv[PV_IPADDR_RBV].my_var_p       = (void*)(&gige_ip_addr);
+    pv[PV_NELM].my_var_p             = (void*)(&nelm);
+    pv[PV_NELM_RBV].my_var_p         = (void*)(&nelm);
+    pv[PV_MONCH].my_var_p            = (void*)(&monch);
+    pv[PV_MONCH_RBV].my_var_p        = (void*)(&monch);
+    pv[PV_PID].my_var_p              = (void*)(&pid);
+    pv[PV_HOSTNAME].my_var_p         = (void*)hostname;
+    pv[PV_DIR].my_var_p              = (void*)directory;
+    pv[PV_WATCHDOG].my_var_p         = (void*)(&watchdog);
+    pv[PV_MCA].my_var_p              = (void*)(&mca);
+    pv[PV_TDC].my_var_p              = (void*)(&tdc);
+    pv[PV_TSEN_PROC].my_var_p        = (void*)(&tsen_proc);
+    pv[PV_CHEN_PROC].my_var_p        = (void*)(&chen_proc);
+    pv[PV_TSEN_CTRL].my_var_p        = (void*)(&tsen_ctrl);
+    pv[PV_CHEN_CTRL].my_var_p        = (void*)(&chen_ctrl);
+    pv[PV_TSEN].my_var_p             = (void*)(&tsen);
+    pv[PV_CHEN].my_var_p             = (void*)(&chen);
+    pv[PV_DATA_FILENAME].my_var_p    = (void*)datafile;
+    pv[PV_SPEC_FILENAME].my_var_p    = (void*)spectrafile;
 
     //--------------------------------------------------
     // Data types
     //--------------------------------------------------
 #ifdef USE_EZCA
+    pv[PV_COUNT].my_dtype            = ezcaByte;
+    pv[PV_TMP_DATAFILE_DIR].my_dtype = ezcaString;
+    pv[PV_DATAFILE_DIR].my_dtype     = ezcaString;
     pv[PV_FILENAME].my_dtype         = ezcaString;
     pv[PV_FILENAME_RBV].my_dtype     = ezcaString;
     pv[PV_FILESIZE].my_dtype         = ezcaLong;
@@ -282,6 +454,9 @@ int pv_array_init(void)
     pv[PV_DATA_FILENAME].my_dtype    = eacaString;
     pv[PV_SPEC_FILENAME].my_dtype    = eacaString;
 #else
+    pv[PV_COUNT].my_dtype            = DBR_CHAR;
+    pv[PV_TMP_DATAFILE_DIR].my_dtype = DBR_STRING;
+    pv[PV_DATAFILE_DIR].my_dtype     = DBR_STRING;
     pv[PV_FILENAME].my_dtype         = DBR_STRING;
     pv[PV_FILENAME_RBV].my_dtype     = DBR_STRING;
     pv[PV_FILESIZE].my_dtype         = DBR_LONG;
@@ -378,7 +553,7 @@ int main(int argc, char* argv[])
     log("initializing PV objects...\n");
     if(0 != pv_array_init())
     {
-        log("failed to initialize PV objects.\n");
+        err("failed to initialize PV objects.\n");
         return -1;
     }
 
@@ -419,23 +594,7 @@ int main(int argc, char* argv[])
     //-----------------------------------------------------------
     // Initialize packet buffers.
     //-----------------------------------------------------------
-    //packet_buff_t buff_p;
-    for(int i=0; i<NUM_PACKET_BUFF; i++)
-    {
-    //    packet_buff_t *buff_p = &packet_buff[i];
-    //    buff_p->lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-    //    buff_p->flag = DATA_WRITE_MASK | DATA_PROC_MASK;
-    //    packet_buff[i].lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-        //if (pthread_mutex_init(&packet_buff[i].lock, NULL) != 0)
-        pthread_mutex_init(&packet_buff[i].lock, NULL);
-        //{
-        //    log("\nmutex init failed!\n");
-        //    return(-1);
-        //}
-        //packet_buff[i].flag = DATA_WRITE_MASK | DATA_PROC_MASK;  // preset the flags
-        atomic_init(&packet_buff[i].flag, DATA_WRITE_MASK | DATA_PROC_MASK);  // preset the flags
-        log("buff[%d].flag = %d\n", i, packet_buff[i].flag);
-    } 
+    buff_init();
 
     //-----------------------------------------------------------
     // Create threads.
@@ -458,6 +617,24 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    
+    //-----------------------------------------------------------
+    // Initialize mutexes.
+    //-----------------------------------------------------------
+    if (pthread_mutex_init(&tmp_datafile_dir_lock, NULL) != 0) {
+        fprintf(stderr, "Mutex initialization failed\n");
+        return 1;
+    }
+    if (pthread_mutex_init(&datafile_dir_lock, NULL) != 0) {
+        fprintf(stderr, "Mutex initialization failed\n");
+        return 1;
+    }
+    if (pthread_mutex_init(&filename_lock, NULL) != 0) {
+        fprintf(stderr, "Mutex initialization failed\n");
+        return 1;
+    }
+
+    //-------------------------------------------------------------------
     // Create udp_conn_thread to configure FPGA and receive data through
     // UDP connection.
     //do
@@ -480,6 +657,7 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    //-------------------------------------------------------------------
     // Create data_write_thread to save raw data files.
     //do
     //{
@@ -501,6 +679,31 @@ int main(int argc, char* argv[])
 		strerror(status));
     }
 
+    //-------------------------------------------------------------------
+    // Create mover_thread to save raw data files.
+    //do
+    //{
+    t1.tv_sec  = 5;
+    t1.tv_nsec = 0;
+    nanosleep(&t1, &t2);
+    //} while(0 == udp_conn_thread_ready);
+
+    //log("creating mover_thread...\n");
+    //while(1)
+    //{
+    //    status = pthread_create(&tid[2], NULL, &mover_thread, NULL);
+    //    if ( 0 == status)
+    //    {
+    //        log("mover_thread created.\n");
+    //        break;
+    //    }
+
+    //    err("Can't create mover_thread: [%s]\n",
+	  //          __func__,
+		//strerror(status));
+    //}
+
+    //-------------------------------------------------------------------
     // Create data_proc_thread to calculate and save spectra files.
     //do
     //{
@@ -527,6 +730,12 @@ int main(int argc, char* argv[])
     //-----------------------------------------------------------
     // Feed the watchdog.
     //-----------------------------------------------------------
+    do
+    {
+        nanosleep(&t1, &t2);
+    } while(0 == atomic_load(&data_write_thread_ready));
+
+
     while(1)
     {
         nanosleep(&t1, &t2);

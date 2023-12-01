@@ -45,8 +45,10 @@
 #include <stdatomic.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
-//#include "ezca.h"
+#endif
 
 #include "germ.h"
 //#include "udp.h"
@@ -58,33 +60,53 @@ extern packet_buff_t packet_buff[NUM_PACKET_BUFF];
     
 extern pv_obj_t pv[NUM_PVS];
 
-extern char         filename[MAX_FILENAME_LEN];
+extern char  filename[MAX_FILENAME_LEN];
+extern char  tmp_datafile_dir[MAX_FILENAME_LEN];
+extern pthread_mutex_t tmp_datafile_dir_lock;
+extern pthread_mutex_t datafile_dir_lock;
+extern pthread_mutex_t filename_lock;
 
-extern unsigned int runno;
-extern uint16_t     filesize;  // in Megabyte
+extern atomic_ulong runno;
+extern atomic_uint  filesize;  // in Megabyte
 
-extern uint8_t udp_conn_thread_ready;
-extern uint8_t data_write_thread_ready;
+extern atomic_char udp_conn_thread_ready;
+extern atomic_char data_write_thread_ready;
 
-void create_datafile_name(char * datafile, uint32_t run_num, uint8_t file_segment)
+void create_datafile_name(char * datafile, uint32_t run_num, uint32_t file_segment)
 {
     char run[32];
     char file_seg[32];
+    char tmp_datafile_dir_val[MAX_FILENAME_LEN];
+    char filename_val[MAX_FILENAME_LEN];
 
     memset(datafile, 0, MAX_FILENAME_LEN);
+    
+    read_protected_string(tmp_datafile_dir, tmp_datafile_dir_val, &tmp_datafile_dir_lock);
+    printf("Temp Dir = %s, located at %p\n", tmp_datafile_dir_val, (void*)tmp_datafile_dir);
+
+    // directory from PV
+    strcpy(datafile, tmp_datafile_dir_val);
+    strcat(datafile, "/");
 
     // filename from PV
-    strcpy(datafile, filename);
+    //strcpy(datafile+strlen(datafile), filename);
+    read_protected_string(filename, filename_val, &filename_lock);
+    strcat(datafile, filename_val);
     
     // run number
     sprintf(run, ".%010u", run_num);
-    memcpy(datafile+strlen(datafile), run, strlen(run));
+    //memcpy(datafile+strlen(datafile), run, strlen(run));
+    strcat(datafile, run);
 
     // file segment number
-    sprintf(file_seg, ".%05u", file_segment);
-    memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
+    sprintf(file_seg, ".%010u", file_segment);
+    //memcpy(datafile+strlen(datafile), file_seg, strlen(file_seg));
+    strcat(datafile, file_seg);
     
-    strcpy(datafile+strlen(datafile), ".bin");
+    //strcpy(datafile+strlen(datafile), ".bin");
+    strcat(datafile, ".bin");
+
+    printf("Data file name is %s\n", datafile);
 
     return;
 }
@@ -99,7 +121,7 @@ void* data_write_thread(void* arg)
     FILE * fp = NULL;
     char   datafile[MAX_FILENAME_LEN];
 
-    uint8_t  file_segment = 0;
+    uint32_t  file_segment = 0;
     uint64_t file_written = 0;
     //uint16_t file_written_mb = 0;
 
@@ -138,12 +160,11 @@ void* data_write_thread(void* arg)
     do
     {
         nanosleep(&t1, &t2);
-    } while(0 == udp_conn_thread_ready);
+    } while(0 == atomic_load(&udp_conn_thread_ready));
 
-    buff_p = &(packet_buff[read_buff]);
-    mutex_lock(&(buff_p->lock), read_buff);
+    atomic_store(&data_write_thread_ready, 1);
 
-    data_write_thread_ready = 1;
+    info("ready to read data...\n");
 
     while(1)
     {
@@ -157,6 +178,11 @@ void* data_write_thread(void* arg)
         // look for a whole frame
         while ( 0 == end_of_frame )
         {
+            buff_p = &(packet_buff[read_buff]);
+            log("lock buff[%d] for read\n", read_buff);
+            lock_buff_read(read_buff, DATA_WRITTEN, __func__);
+
+            log("%d bytes in buff[%d]\n", buff_p->length, read_buff);
             packet_length = (buff_p->length) >> 2;  // process data as 4-byte words
             packet        = (uint32_t*)(buff_p->packet);
             frame_size   += packet_length << 2;
@@ -166,7 +192,7 @@ void* data_write_thread(void* arg)
 
 	    //for(int i=0; i<packet_length; i++)
 	    //{
-		//    printf("0x%08x\n", ntohl(packet[i]));
+  		//    printf("0x%08x\n", ntohl(packet[i]));
 	    //}
 
             //-------------------------------------------------
@@ -184,7 +210,7 @@ void* data_write_thread(void* arg)
 
                 start_of_frame = 1;
                 payload_length = packet_length - 4;
-                log("got Start of Frame\n");
+                info("got Start of Frame\n");
             }
             else
             {
@@ -198,7 +224,7 @@ void* data_write_thread(void* arg)
                     num_lost_events = ntohl(packet[packet_length-2]);
                     end_of_frame = 1;
                     payload_length = packet_length - 4;
-                    log("got End of Frame\n");
+                    info("got End of Frame\n");
                 }
                 else
                 {
@@ -206,58 +232,37 @@ void* data_write_thread(void* arg)
                 }
                 run_num = buff_p->runno;
             }
-            atomic_store(&buff_p->flag, (atomic_load(&buff_p->flag) | DATA_WRITE_MASK));
-            //buff_p->flag |= DATA_WRITE_MASK;
-
-            //-------------------------------------------------
-            // move to next buffer
-            mutex_unlock(&(buff_p->lock), read_buff);
-            read_buff++;
-            read_buff &= PACKET_BUFF_MASK;
-            buff_p = &(packet_buff[read_buff]);
-            while(1)
-            {
-                mutex_lock(&(buff_p->lock), read_buff);
-                if( !(atomic_load(&buff_p->flag) & DATA_WRITE_MASK) )  // I haven't read it
-                {
-                    break;
-                }
-                log("no new data in buff[%d]. Wait...\n", read_buff); 
-                mutex_unlock(&(buff_p->lock), read_buff);
-                sched_yield();
-                //nanosleep(&t1, &t2);
-            }
 
             //-------------------------------------------------
             // write data to file
             //
             // New file segment for the current run if the
             // file size limit has been reached.
-            if ((file_written>>20) > filesize)
+            
+            // open file if it was unsuccessful for the previous packet
+            if(!fp) 
             {
-                if (fp)
-                {
-                    fclose(fp);
-                }
-                file_segment++;
-                file_written = 0;
                 create_datafile_name(datafile, run_num, file_segment);
                 fp = fopen(datafile, "a");
             }
-            else
+            
+            if(fp)
             {
-                // open file if it was unsuccessful for the previous packet
-                if(!fp) 
+                //printf("Writing %u from buff[%d] to file %s\n", packet_length<<2, read_buff, datafile);
+                fwrite(packet, packet_length << 2, 1, fp);
+                file_written += packet_length << 2;
+
+                uint16_t filesize_val = atomic_load_explicit(&filesize, memory_order_relaxed);
+
+                if (((file_written+1008)>>20) > filesize_val)
                 {
+                    fclose(fp);
+                    info("last data file is %s\n", datafile);
+                    file_segment++;
+                    file_written = 0;
                     create_datafile_name(datafile, run_num, file_segment);
                     fp = fopen(datafile, "a");
                 }
-            }
-
-            if(fp)
-            {
-                fwrite(packet, packet_length, 1, fp);
-                file_written += packet_length;
             }
             else
             {
@@ -265,6 +270,15 @@ void* data_write_thread(void* arg)
             }
 
             num_events += payload_length >> 1;
+
+            buff_p->status |= DATA_WRITTEN;
+            unlock_buff(read_buff, __func__);
+            log("buff[%d] unlocked\n", read_buff);
+
+            //-------------------------------------------------
+            // move to next buffer
+            read_buff++;
+            read_buff &= PACKET_BUFF_MASK;
 
             if (1 == end_of_frame)
             {
@@ -279,6 +293,7 @@ void* data_write_thread(void* arg)
             fp = NULL;
             gettimeofday(&tv_end, NULL);
             log("datafile (new run) written\n"); 
+            printf("datafile %s written\n", datafile); 
 
             file_segment = 0;
             file_written = 0;
@@ -297,15 +312,15 @@ void* data_write_thread(void* arg)
         }
         last_frame_num = frame_num;
 
-        log( "frame %lu (%lu packets / %lu events / %lu bytes) processed in %f sec\n",
-             frame_num, num_packets, num_events, frame_size,
-             time_elapsed(tv_begin, tv_end)/1e6);
+        info( "frame %lu (%lu packets / %lu events / %lu bytes) processed in %f sec\n",
+              frame_num, num_packets, num_events, frame_size,
+              time_elapsed(tv_begin, tv_end)/1e6);
 
         packet_counter -= (first_packetnum-1);
 
         if (packet_counter != num_packets )
         {
-            err("missed %u packets\n", packet_counter - num_packets);
+            err("    missed %u packets\n", packet_counter - num_packets);
         }
         else
         {
@@ -314,7 +329,7 @@ void* data_write_thread(void* arg)
 
         if (0!= num_lost_events)
         {
-            err("%u events lost due to UDP Tx FIFO overflow.\n", num_lost_events);
+            err("    %u events lost due to UDP Tx FIFO overflow.\n", num_lost_events);
         }
         else
         {

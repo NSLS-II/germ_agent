@@ -7,9 +7,10 @@
 #include <stdatomic.h>
 
 #include <cadef.h>
+#include "log.h"
 
 #define RETRY_ON_FAILURE  5
-#define MAX_FILENAME_LEN  64
+#define MAX_FILENAME_LEN  128
 #define PREFIX_CFG_FILE  "prefix.cfg"
 
 
@@ -31,37 +32,40 @@
 //-----------------------------------------------------------
 // Read/written by exp_mon_thread.
 //-----------------------------------------------------------
-#define PV_FILENAME            4
-#define PV_RUNNO               5
-#define PV_FILESIZE            6
-#define PV_IPADDR              7
-#define PV_NELM                8
-#define PV_MONCH               9
-#define PV_TSEN_PROC          10
-#define PV_CHEN_PROC          11
-#define PV_TSEN_CTRL          12
-#define PV_CHEN_CTRL          13
-#define PV_TSEN               14
-#define PV_CHEN               15
+#define PV_COUNT               4
+#define PV_TMP_DATAFILE_DIR    5
+#define PV_DATAFILE_DIR        6
+#define PV_FILENAME            7
+#define PV_RUNNO               8
+#define PV_FILESIZE            9
+#define PV_IPADDR             10
+#define PV_NELM               11
+#define PV_MONCH              12
+#define PV_TSEN_PROC          13
+#define PV_CHEN_PROC          14
+#define PV_TSEN_CTRL          15
+#define PV_CHEN_CTRL          16
+#define PV_TSEN               17
+#define PV_CHEN               18
 // Write only
-#define PV_FILENAME_RBV       16
-#define PV_RUNNO_RBV          17
-#define PV_FILESIZE_RBV       18
-#define PV_IPADDR_RBV         19
-#define PV_NELM_RBV           20
-#define PV_MONCH_RBV          21
+#define PV_FILENAME_RBV       19
+#define PV_RUNNO_RBV          20
+#define PV_FILESIZE_RBV       21
+#define PV_IPADDR_RBV         22
+#define PV_NELM_RBV           23
+#define PV_MONCH_RBV          24
 
 //-----------------------------------------------------------
 // Read/written by data_write_thread.
 //-----------------------------------------------------------
-#define PV_DATA_FILENAME      22
+#define PV_DATA_FILENAME      25
 
 //-----------------------------------------------------------
 // Read/written by data_proc_thread.
 //-----------------------------------------------------------
-#define PV_MCA                23
-#define PV_TDC                24
-#define PV_SPEC_FILENAME      25
+#define PV_MCA                26
+#define PV_TDC                27
+#define PV_SPEC_FILENAME      28
 
 
 //===========================================================
@@ -73,27 +77,27 @@
 #define MAX_NELM             192
 //#define MAX_NELM              96
 
-#define NUM_PVS               26
+#define NUM_PVS               29
 
 #define FIRST_MAIN_PV          0
 #define LAST_MAIN_PV           3
 
 #define FIRST_EXP_MON_PV       4
-#define LAST_EXP_MON_PV       21
+#define LAST_EXP_MON_PV       24
 
 #define FIRST_EXP_MON_RD_PV    4
-#define LAST_EXP_MON_RD_PV    15
+#define LAST_EXP_MON_RD_PV    18
 
-#define FIRST_DATA_WRITE_PV   22
-#define LAST_DATA_WRITE_PV    22
+#define FIRST_DATA_WRITE_PV   25
+#define LAST_DATA_WRITE_PV    25
 
-#define FIRST_DATA_PROC_PV    23
-#define LAST_DATA_PROC_PV     25
+#define FIRST_DATA_PROC_PV    26
+#define LAST_DATA_PROC_PV     28
 
 #define FIRST_ENV_PV          PV_PID
 #define LAST_ENV_PV           PV_DIR
 
-#define FIRST_RUN_PV          PV_FILENAME
+#define FIRST_RUN_PV          PV_TMP_DATAFILE_DIR
 #define LAST_RUN_PV           PV_FILESIZE
 
 #define FIRST_RUN_RBV_PV      PV_FILENAME_RBV
@@ -126,17 +130,21 @@ typedef struct
 
 typedef struct
 {
-    pthread_mutex_t  lock;
-//    uint32_t         frame_num;
-//    uint16_t         num_lost_event;
-    atomic_char      flag;
-    uint32_t         runno;
-    uint16_t         length;
-    uint8_t          packet[MAX_PACKET_LENGTH/4];
+    pthread_mutex_t     mutex;
+    uint8_t             status;
+//    pthread_spinlock_t  spinlock;
+//    uint32_t            frame_num;
+//    uint16_t            num_lost_event;
+//    atomic_flag         flag;
+    uint16_t            length;
+    uint32_t            runno;
+    uint8_t             packet[MAX_PACKET_LENGTH];
 } packet_buff_t;
 
-#define DATA_WRITE_MASK 0x1
-#define DATA_PROC_MASK  0x2
+#define DATA_PROCCED   0x01
+#define DATA_WRITTEN   0x02
+#define DATA_PROCCING  0x10
+#define DATA_WRITING   0x20
 
 typedef struct
 {
@@ -259,6 +267,37 @@ extern char ca_dtype[7][11];
 // Some functions
 
 long int time_elapsed(struct timeval time_i, struct timeval time_f);
+
+//inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p);
+//inline void write_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p);
+
+//========================================================================
+// Read a mutex protected string.
+//========================================================================
+inline void read_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+{
+    log("lock mutex for read.\n");
+    pthread_mutex_lock(mutex_p);
+    strcpy(dest, src);
+    pthread_mutex_unlock(mutex_p);
+    log("mutex unlocked\n");
+}
+
+//========================================================================
+// Write a mutex protected string.
+//========================================================================
+inline void write_protected_string(char * src, char * dest, pthread_mutex_t * mutex_p)
+{
+    log("lock mutex for write.\n");
+    pthread_mutex_lock(mutex_p);
+    strcpy(dest, src);
+    pthread_mutex_unlock(mutex_p);
+    log("mutex unlocked\n");
+}
+
+void lock_buff_read(uint8_t idx, char check_val, const char* caller);
+void lock_buff_write(uint8_t idx, char check_val, const char* caller);
+void unlock_buff(uint8_t, const char* caller);
 
 void create_channel(const char* thread, unsigned int first, unsigned int last_pv);
 

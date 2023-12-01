@@ -20,7 +20,7 @@
 #include <ezca.h>
 #endif
 
-#include "germ_atom.h"
+#include "germ.h"
 #include "mover.h"
 #include "log.h"
 
@@ -30,6 +30,9 @@
 extern atomic_char count;
 extern char        tmp_datafile_dir[MAX_FILENAME_LEN];
 extern char        datafile_dir[MAX_FILENAME_LEN];
+extern pthread_mutex_t tmp_datafile_dir_lock;
+extern pthread_mutex_t datafile_dir_lock;
+extern pthread_mutex_t filename_lock;
 
 void* mover_thread(void* arg)
 {
@@ -46,16 +49,19 @@ void* mover_thread(void* arg)
 
     FILE *src_fp, *dest_fp;
 
+    char tmp_datafile_dir_val[MAX_FILENAME_LEN];
+    char datafile_dir_val[MAX_FILENAME_LEN];
 
     while(1)
     {
-        if(strlen(tmp_datafile_dir)==0)
+        read_protected_string(tmp_datafile_dir, tmp_datafile_dir_val, &tmp_datafile_dir_lock);
+        if(strlen(tmp_datafile_dir_val)==0)
             continue;
 
         count_status = atomic_load(&count);
-        num_files = scandir(tmp_datafile_dir, &namelist, 0, alphasort);
+        num_files = scandir(tmp_datafile_dir_val, &namelist, 0, alphasort);
 
-        //printf("%d items found in %s.\n", num_files, tmp_datafile_dir);
+        //printf("%d items found in %s.\n", num_files, tmp_datafile_dir_val);
         //for (int i=0; i<num_files; i++)
         //{
         //    printf("%d - %s\n", i+1, namelist[i]->d_name);
@@ -68,19 +74,21 @@ void* mover_thread(void* arg)
                 free(namelist[--num_files]);  // leave the last file when counting
             }
 
+            read_protected_string(datafile_dir, datafile_dir_val, &datafile_dir_lock);
+
             while (num_files>2)  // 
             {
                 memset(src_file, 0, MAX_FILENAME_LEN);
                 memset(dest_file, 0, MAX_FILENAME_LEN);
     
-                strcat(src_file, tmp_datafile_dir);
+                strcat(src_file, tmp_datafile_dir_val);
                 strcat(src_file, "/");
 
                 printf("src_file = %s\n", src_file);
-                printf("filename = %s\n", namelist[num_files]->d_name);
+                printf("filename = %s\n", namelist[--num_files]->d_name);
                 strcat(src_file, namelist[num_files]->d_name);
     
-                strcat(dest_file, datafile_dir);
+                strcat(dest_file, datafile_dir_val);
                 strcat(dest_file, "/");
                 strcat(dest_file, namelist[num_files]->d_name);
     

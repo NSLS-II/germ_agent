@@ -42,7 +42,7 @@
 #endif
 
 #include "germ_atom.h"
-#include "exp_mon.h"
+#include "exp_mon_atom.h"
 #include "udp_conn_atom.h"
 #include "data_write_atom.h"
 #include "data_proc_atom.h"

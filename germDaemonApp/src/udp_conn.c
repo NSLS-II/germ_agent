@@ -39,8 +39,10 @@
 #include <stdatomic.h>
 
 #include <cadef.h>
+
+#ifdef USE_EZCA
 #include <ezca.h>
-//#include "ezca.h"
+#endif
 
 #include "germ.h"
 //#include "udp.h"
@@ -76,8 +78,8 @@ extern char     filename[MAX_FILENAME_LEN];
 extern uint32_t runno;
 extern uint32_t filesize;
 
-extern uint8_t  exp_mon_thread_ready;
-extern uint8_t  udp_conn_thread_ready;
+extern atomic_char exp_mon_thread_ready;
+extern atomic_char udp_conn_thread_ready;
 
 //=======================================================
 const char *gige_strerr(int code)
@@ -165,7 +167,7 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
                sizeof(ret->si_recv));
     if (rc < 0) {
         perror(__func__);
-        log("failed to bind.\n");
+        err("failed to bind.\n");
         return NULL;
     }
     
@@ -235,11 +237,11 @@ int gige_reg_read(gige_reg_t *reg, uint32_t addr, uint32_t *value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        log("select error!\n");
+        err("select error!\n");
         return -1;
     }
     else if ( ret == 0 ) {
-        log("socket timeout\n");
+        err("socket timeout\n");
         return -1;
     }
     
@@ -295,19 +297,19 @@ int gige_reg_write(gige_reg_t *reg, uint32_t addr, uint32_t value)
     
     // Detect timeout
     if ( ret < 0 ) {
-        log("select error: %d! Abort\n", errno);
+        err("select error: %d! Abort\n", errno);
         return -1;
     }
     
     if ( ret == 0 ) {
-        log("socket timeout from select(). Abort.\n");
+        err("socket timeout from select(). Abort.\n");
         return -1;
     }
     
     ssize_t n = recvfrom(reg->sock, msg , 10, 0, 
                          (struct sockaddr *)&si_other, &len);
     if (n < 0) {
-        log("incorrect number of bytes received (%ld). Abort.\n", n);
+        err("incorrect number of bytes received (%ld). Abort.\n", n);
         perror(__func__);
         return -1;
     }
@@ -444,7 +446,6 @@ void* udp_conn_thread(void* arg)
 
     packet_buff_t * buff_p;
     unsigned char   write_buff = 0;
-    uint8_t  flag;
 
     struct timespec t1, t2;
 
@@ -454,7 +455,7 @@ void* udp_conn_thread(void* arg)
     do
     {
         nanosleep(&t1, &t2);
-    } while(0 == exp_mon_thread_ready);
+    } while(0 == atomic_load(&exp_mon_thread_ready));
 
     log("########## Initializing udp_conn_thread ##########\n");
 
@@ -499,40 +500,32 @@ void* udp_conn_thread(void* arg)
 
     dat = gige_data_init(150, NULL);
 
-    buff_p = &(packet_buff[write_buff]);
-    mutex_lock(&(buff_p->lock), write_buff);
 
-    udp_conn_thread_ready = 1;
+    for (int i=0; i<NUM_PACKET_BUFF; i++)
+    {
+        log("buff[%d].status = 0x%x\n", i, packet_buff[i].status);
+    }
 
-    log("receiving Data...\n"); 
+    atomic_store(&udp_conn_thread_ready, 1);
+
+    info("ready to receive Data...\n");
+
     while (1)
     { 
-        if ( 0 == gige_data_recv(dat, buff_p) )
-        {
-            atomic_store(&buff_p->flag, 0);
-            mutex_unlock(&(buff_p->lock), write_buff);
+        buff_p = &(packet_buff[write_buff]);
 
-            write_buff++;
-            write_buff &= PACKET_BUFF_MASK;
+        log("write to buff[%d]\n", write_buff);
+        //lock_buff_write(write_buff, DATA_WRITTEN|DATA_PROCCED, __func__);
+        lock_buff_write(write_buff, DATA_WRITTEN, __func__);
 
-            buff_p = &(packet_buff[write_buff]);
-            mutex_lock(&(buff_p->lock), write_buff);
+        while(gige_data_recv(dat, buff_p) ); // loop until receive is successful
+        
+        buff_p->status = 0;
+        unlock_buff(write_buff, __func__);
+        log("buff[%d] released\n", write_buff);
 
-            // The flag is sed by the data writing thread and spectra
-            // calculation thread, so the value should be 3.
-            flag = atomic_load(&buff_p->flag);
-            if( !(flag & DATA_WRITE_MASK) )
-            {
-                err("buff[%d].flag=%d. Overflow detected. Data file for run %u may be corrupted.\n",
-                    write_buff, flag, buff_p->runno);
-            }
-        }
-        else
-        {
-            // Error in Rx, continue to use the current buff
-            continue;  
-        }
-
+        write_buff++;
+        write_buff &= PACKET_BUFF_MASK;
     }
 
     gige_reg_close(reg);

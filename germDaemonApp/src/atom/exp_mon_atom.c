@@ -13,9 +13,9 @@
 #include <ezca.h>
 #endif
 
-#include "germ.h"
+#include "germ_atom.h"
 //#include "udp.h"
-#include "exp_mon.h"
+#include "exp_mon_atom.h"
 #include "log.h"
 
 extern atomic_char   count;
@@ -26,9 +26,6 @@ extern char          datafile_run[MAX_FILENAME_LEN];
 extern char          spectrafile_run[MAX_FILENAME_LEN];
 extern unsigned long filesize;
 extern unsigned long runno;
-extern pthread_mutex_t tmp_datafile_dir_lock;
-extern pthread_mutex_t datafile_dir_lock;
-extern pthread_mutex_t filename_lock;
 
 extern pv_obj_t  pv[NUM_PVS];
 extern unsigned int  nelm;
@@ -47,29 +44,29 @@ extern atomic_char exp_mon_thread_ready;
 // data_proc_thread will append segno to funfile as the data file name
 // used to save detector data.
 //------------------------------------------------------------------------
-//void file_name_gen(void)
-//{
-//    char run[32];
-//    char spectra[32];
-//
-//    log("directory is %s, filename is %s, runno is %u\n", tmp_datafile_dir, filename, runno);
-//
-//    memset(datafile_run, 0, sizeof(datafile_run));
-//    memset(spectrafile_run, 0, sizeof(spectrafile_run));
-//    memset(run, 0, sizeof(run));
-//
-//    strcpy(datafile_run, tmp_datafile_dir);
-//    strcpy(datafile_run+strlen(datafile_run), filename);
-//    log("filename is %s, datafile_run is %s\n", filename, datafile_run);
-//    sprintf(run, ".%010ld", runno);
-//    memcpy(datafile_run+strlen(datafile_run), run, strlen(run));
-//    log("new data file name (w/o seg) is %s\n", datafile_run);
-//
-//    strcpy(spectrafile_run, filename);
-//    sprintf(spectra, "_spectra_.%010ld", runno);
-//    memcpy(spectrafile_run+strlen(spectrafile_run), spectra, strlen(spectra));
-//    log("new spectra file name is %s\n", spectrafile_run);
-//}
+void file_name_gen(void)
+{
+    char run[32];
+    char spectra[32];
+
+    log("directory is %s, filename is %s, runno is %u\n", tmp_datafile_dir, filename, runno);
+
+    memset(datafile_run, 0, sizeof(datafile_run));
+    memset(spectrafile_run, 0, sizeof(spectrafile_run));
+    memset(run, 0, sizeof(run));
+
+    strcpy(datafile_run, tmp_datafile_dir);
+    strcpy(datafile_run+strlen(datafile_run), filename);
+    log("filename is %s, datafile_run is %s\n", filename, datafile_run);
+    sprintf(run, ".%010ld", runno);
+    memcpy(datafile_run+strlen(datafile_run), run, strlen(run));
+    log("new data file name (w/o seg) is %s\n", datafile_run);
+
+    strcpy(spectrafile_run, filename);
+    sprintf(spectra, "_spectra_.%010ld", runno);
+    memcpy(spectrafile_run+strlen(spectrafile_run), spectra, strlen(spectra));
+    log("new spectra file name is %s\n", spectrafile_run);
+}
 
 
 //------------------------------------------------------------------------
@@ -188,7 +185,6 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
 void pv_update(struct event_handler_args eha)
 {
     uint8_t count_status;
-    char str[MAX_FILENAME_LEN];
 
     if (ECA_NORMAL != eha.status)
     {
@@ -244,8 +240,8 @@ void pv_update(struct event_handler_args eha)
     // filesize
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILESIZE].my_chid))
     {
-        atomic_store_explicit(&filesize, *(unsigned long*)eha.dbr, memory_order_relaxed);
-        //filesize = *(unsigned long*)eha.dbr;
+        //atomic_store_explicit(&filesize, *(unsigned long*)eha.dbr, memory_order_relaxed);
+        filesize = *(unsigned long*)eha.dbr;
         //printf("[%s]: new file size is %ld\n", filesize);
         pv_put(PV_FILESIZE_RBV);
     }
@@ -256,50 +252,43 @@ void pv_update(struct event_handler_args eha)
         if(count_status==1)
         {
             atomic_store(&count, 1);
-            info("start counting.\n");
         }
         else
         {
             atomic_store(&count, 0);
-            info("stop counting.\n");
         }
+        info("start counting.\n");
     }
     //tmp_datafile_dir
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_TMP_DATAFILE_DIR].my_chid))
     {
-        write_protected_string((char*)eha.dbr, tmp_datafile_dir, &tmp_datafile_dir_lock);
-        //memset(tmp_datafile_dir, 0, MAX_FILENAME_LEN);
-        //strcpy(tmp_datafile_dir, eha.dbr);
-        read_protected_string(tmp_datafile_dir, str, &tmp_datafile_dir_lock);
-        info("new temp data directory is %s at %p\n", str, (void*)tmp_datafile_dir);
+        memset(tmp_datafile_dir, 0, MAX_FILENAME_LEN);
+        strcpy(tmp_datafile_dir, eha.dbr);
+        info("new temp data directory is %s\n", tmp_datafile_dir);
         //file_name_gen();
     }
     //datafile_dir
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_DATAFILE_DIR].my_chid))
     {
-        write_protected_string((char*)eha.dbr, datafile_dir, &datafile_dir_lock);
-        //memset(datafile_dir, 0, MAX_FILENAME_LEN);
-        //strcpy(datafile_dir, eha.dbr);
-        read_protected_string(datafile_dir, str, &datafile_dir_lock);
-        info("new data directory is %s\n", str);
+        memset(datafile_dir, 0, MAX_FILENAME_LEN);
+        strcpy(datafile_dir, eha.dbr);
+        info("new data directory is %s\n", datafile_dir);
         //file_name_gen();
     }
     //filename
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILENAME].my_chid))
     {
-        write_protected_string((char*)eha.dbr, filename, &filename_lock);
-        //memset(filename, 0, MAX_FILENAME_LEN);
-        //strcpy(filename, eha.dbr);
-        read_protected_string(filename, str, &filename_lock);
-        info("new filename is %s\n", str);
+        memset(filename, 0, MAX_FILENAME_LEN);
+        strcpy(filename, eha.dbr);
+        info("new filename is %s\n", filename);
         pv_put(PV_FILENAME_RBV);
         //file_name_gen();
     }
     // runno
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RUNNO].my_chid))
     {
-        atomic_store_explicit(&runno, *(unsigned long*)eha.dbr, memory_order_relaxed);
-        //runno = *(unsigned long*)eha.dbr;
+        //atomic_store_explicit(&runno, *(unsigned long*)eha.dbr, memory_order_relaxed);
+        runno = *(unsigned long*)eha.dbr;
         //printf("[%s]: new runno is %ld\n", runno);
         pv_put(PV_RUNNO_RBV);
         //file_name_gen();
