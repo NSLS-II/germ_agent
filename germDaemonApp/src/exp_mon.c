@@ -4,23 +4,25 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include <pthread.h>
 
-//#include <tsDefs.h>
 #include <cadef.h>
-#include <ezca.h>
-//#include "ezca.h"
 
 #include "germ.h"
-//#include "udp.h"
 #include "exp_mon.h"
 #include "log.h"
 
-extern unsigned char count;
+extern atomic_char   count;
+extern char          tmp_datafile_dir[MAX_FILENAME_LEN];
+extern char          datafile_dir[MAX_FILENAME_LEN];
 extern char          filename[MAX_FILENAME_LEN];
 extern char          datafile_run[MAX_FILENAME_LEN];
 extern char          spectrafile_run[MAX_FILENAME_LEN];
 extern unsigned long filesize;
 extern unsigned long runno;
+extern pthread_mutex_t tmp_datafile_dir_lock;
+extern pthread_mutex_t datafile_dir_lock;
+extern pthread_mutex_t filename_lock;
 
 extern pv_obj_t  pv[NUM_PVS];
 extern unsigned int  nelm;
@@ -31,40 +33,13 @@ extern unsigned char tsen_ctrl, chen_ctrl;
 extern char          tsen[MAX_NELM], chen[MAX_NELM];
 
 extern char ca_dtype[7][11];
-char        exp_mon_thread_ready = 0;
 extern char gige_ip_addr[16];
-//========================================================================
-// Generate names of datafile and spectrafile with FNAM and RUNNO.
-// data_proc_thread will append segno to funfile as the data file name
-// used to save detector data.
-//------------------------------------------------------------------------
-void file_name_gen(void)
-{
-    char run[32];
-    char spectra[32];
-
-    log("filename is %s, runno is %u\n", filename, runno);
-
-    memset(datafile_run, 0, sizeof(datafile_run));
-    memset(spectrafile_run, 0, sizeof(spectrafile_run));
-    memset(run, 0, sizeof(run));
-
-    strcpy(datafile_run, filename);
-    log("filename is %s, datafile_run is %s\n", filename, datafile_run);
-    sprintf(run, ".%010ld", runno);
-    memcpy(datafile_run+strlen(datafile_run), run, strlen(run));
-    log("new data file name (w/o seg) is %s\n", datafile_run);
-
-    strcpy(spectrafile_run, filename);
-    sprintf(spectra, "_spectra_.%010ld", runno);
-    memcpy(spectrafile_run+strlen(spectrafile_run), spectra, strlen(spectra));
-    log("new spectra file name is %s\n", spectrafile_run);
-}
-
+extern atomic_char exp_mon_thread_ready;
 
 //------------------------------------------------------------------------
 void print_en(char* en)
 {
+#ifdef _DBG_
     int width = 10;
     unsigned int i, j, I, J;
     I = nelm/width;
@@ -91,6 +66,7 @@ void print_en(char* en)
     for(j=0; j<J; j++)
         printf("%6d", en[i*width+j]);
     printf("\n\n");
+#endif
 }
         
 
@@ -107,13 +83,6 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
     log("processing %s...\n", pv[pv_en].my_name);
     log("original:\n");
     print_en((char*)(pv[pv_en].my_var_p));
-//    print_en(tsen);
-
-    //for(i=0; i<nelm; i++)
-    //{
-    //    printf("%d ", *((unsigned char*)(pv[pv_en].my_var_p)+i));
-    //}
-    //printf("\n\n");
 
     switch(*(unsigned char*)(pv[pv_ctrl].my_var_p))
     {
@@ -175,23 +144,23 @@ void en_array_proc( unsigned char pv_proc,      // Can be PV_TSEN_PROC or PV_TSE
 //------------------------------------------------------------------------
 void pv_update(struct event_handler_args eha)
 {
+    uint8_t count_status;
+    char str[MAX_FILENAME_LEN];
+
     if (ECA_NORMAL != eha.status)
     {
-        printf( "[%s]: CA subscription status is %d instead of %d (ECA_NORMAL)!\n",
-                __func__,
+        err( "CA subscription status is %d instead of %d (ECA_NORMAL)!\n",
                 eha.status,
                 ECA_NORMAL);
         return;
     }
 
     log("updating %s.\n", ca_name(eha.chid));
-    //printf("[%s]: type is %ld, count is %ld\n", eha.type, eha.count);
 
 	// monch
     if ((unsigned long)eha.chid == (unsigned long)(pv[PV_MONCH].my_chid))
     {
         monch = *(unsigned int*)eha.dbr;
-        //printf("[%s]: new monch is %d\n", monch);
         pv_put(PV_MONCH_RBV);
     }
     // tsen_proc
@@ -209,13 +178,11 @@ void pv_update(struct event_handler_args eha)
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_TSEN].my_chid))
     {
         memcpy(tsen, eha.dbr, nelm);
-//        print_en((char*)eha.dbr);
     }
     // chen
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_CHEN].my_chid))
     {
         memcpy(chen, eha.dbr, nelm);
-//        print_en((char*)eha.dbr);
     }
     // tsen_ctrl
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_TSEN_CTRL].my_chid))
@@ -230,124 +197,65 @@ void pv_update(struct event_handler_args eha)
     // filesize
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILESIZE].my_chid))
     {
-        filesize = *(unsigned long*)eha.dbr;
-        //printf("[%s]: new file size is %ld\n", filesize);
+        atomic_store_explicit(&filesize, *(unsigned long*)eha.dbr, memory_order_relaxed);
         pv_put(PV_FILESIZE_RBV);
+    }
+    // count
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_COUNT].my_chid))
+    {
+        count_status = *(unsigned long*)eha.dbr;
+        if(count_status==1)
+        {
+            atomic_store(&count, 1);
+            info("start counting.\n");
+        }
+        else
+        {
+            atomic_store(&count, 0);
+            info("stop counting.\n");
+        }
+    }
+    //tmp_datafile_dir
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_TMP_DATAFILE_DIR].my_chid))
+    {
+        write_protected_string((char*)eha.dbr, tmp_datafile_dir, MAX_FILENAME_LEN, &tmp_datafile_dir_lock);
+        read_protected_string(tmp_datafile_dir, str, MAX_FILENAME_LEN, &tmp_datafile_dir_lock);
+        info("new temp data directory is %s at %p\n", str, (void*)tmp_datafile_dir);
+    }
+    //datafile_dir
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_DATAFILE_DIR].my_chid))
+    {
+        write_protected_string((char*)eha.dbr, datafile_dir, MAX_FILENAME_LEN, &datafile_dir_lock);
+        read_protected_string(datafile_dir, str, MAX_FILENAME_LEN, &datafile_dir_lock);
+        info("new data directory is %s\n", str);
     }
     //filename
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILENAME].my_chid))
     {
-        memset(filename, 0, MAX_FILENAME_LEN);
-        strcpy(filename, eha.dbr);
-        log("new filename is %s\n", filename);
+        write_protected_string((char*)eha.dbr, filename, MAX_FILENAME_LEN, &filename_lock);
+        read_protected_string(filename, str, MAX_FILENAME_LEN, &filename_lock);
+        info("new filename is %s\n", str);
         pv_put(PV_FILENAME_RBV);
-        file_name_gen();
     }
     // runno
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RUNNO].my_chid))
     {
-        runno = *(unsigned long*)eha.dbr;
-        //printf("[%s]: new runno is %ld\n", runno);
+        atomic_store_explicit(&runno, *(unsigned long*)eha.dbr, memory_order_relaxed);
         pv_put(PV_RUNNO_RBV);
-        file_name_gen();
     }
     // ipaddr
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_IPADDR].my_chid))
     {
         strcpy(gige_ip_addr, eha.dbr);
-        //printf("[%s]: new IP address is %s\n", gige_ip_addr);
+        log("new IP address is %s\n", gige_ip_addr);
         pv_put(PV_IPADDR_RBV);
     }
     // nelm
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_NELM].my_chid))
     {
         nelm = *(unsigned int*)eha.dbr;
-        //printf("[%s]: new nelm is %d\n", nelm);
         pv_put(PV_NELM_RBV);
     }
-/*
-    switch ((unsigned long)eha.chid)
-    {
-        // monch
-        case (unsigned long)(pv[PV_MONCH].my_chid):
-            monch = *(unsigned int*)eha.dbr;
-            //printf("[%s]: new monch is %d\n", monch);
-            pv_put(PV_MONCH_RBV);
-            break;
-    
-        // tsen_proc
-        case (unsigned long)(pv[PV_TSEN_PROC].my_chid):
-            if (1 == *(unsigned char*)eha.dbr)
-                en_array_proc(PV_TSEN_PROC, PV_TSEN_CTRL, PV_TSEN, 1);
-				break;
-    
-        // chen_proc
-        case (unsigned long)(pv[PV_CHEN_PROC].my_chid):
-            en_array_proc(PV_CHEN_PROC, PV_CHEN_CTRL, PV_CHEN, 0);
-			break;
-    
-    
-        // tsen
-        case (unsigned long)(pv[PV_TSEN].my_chid):
-            memcpy(tsen, eha.dbr, nelm);
-            //print_en((char*)eha.dbr);
-            break;
-    
-        // chen
-        case (unsigned long)(pv[PV_CHEN].my_chid):
-            memcpy(chen, eha.dbr, nelm);
-            //print_en((char*)eha.dbr);
-            break;
-    
-        // tsen_ctrl
-        case (unsigned long)(pv[PV_TSEN_CTRL].my_chid):
-            tsen_ctrl = *(char*)eha.dbr;
-	    	break;
-        
-        // chen_ctrl
-        case (unsigned long)(pv[PV_CHEN_CTRL].my_chid):
-            chen_ctrl = *(char*)eha.dbr;
-	    	break;
-    
-        // filesize
-        case (unsigned long)(pv[PV_FILESIZE].my_chid):
-            filesize = *(unsigned long*)eha.dbr;
-            //printf("[%s]: new file size is %ld\n", filesize);
-            pv_put(PV_FILESIZE_RBV);
-	    	break;
-    
-        //filename
-        case (unsigned long)(pv[PV_FILENAME].my_chid):
-            log("eha.dbr is %s\n", eha.dbr);
-            strcpy(filename, eha.dbr);
-            log("new filename is %s\n", filename);
-            pv_put(PV_FILENAME_RBV);
-            filename_gen();
-	    	break;
-
-        // runno
-        case (unsigned long)(pv[PV_RUNNO].my_chid):
-            runno = *(unsigned long*)eha.dbr;
-            //printf("[%s]: new runno is %ld\n", runno);
-            pv_put(PV_RUNNO_RBV);
-            filename_gen();
-	    	break;
-    
-	    // ipaddr
-        case (unsigned long)(pv[PV_IPADDR].my_chid):
-            strcpy(gige_ip_addr, eha.dbr);
-            //printf("[%s]: new IP address is %s\n", gige_ip_addr);
-            pv_put(PV_IPADDR_RBV);
-	    	break;
-    
-        // nelm
-        case (unsigned long)(pv[PV_NELM].my_chid):
-            nelm = *(unsigned int*)eha.dbr;
-            //printf("[%s]: new nelm is %d\n", nelm);
-            pv_put(PV_NELM_RBV);
-	    	break;
-    }
-*/
 }
 //------------------------------------------------------------------------
 
@@ -380,24 +288,14 @@ void* exp_mon_thread(void * arg)
 
     // Get it for udp_conn_thread to initialize UDP connection
     pv_get(PV_IPADDR);
-    //printf("[%s]: IP address is %s\n", gige_ip_addr);
     pv_put(PV_IPADDR_RBV);
-
-//    // Get it for xxEN to be correctly subscribed
-//    pv_get(PV_NELM);
-//    log("NELM is %d\n", nelm);
-//    pv_put(PV_NELM_RBV);
-//    pv[PV_TSEN].my_nelm = nelm;
-//    pv[PV_CHEN].my_nelm = nelm;
-    
 
     for (int i=FIRST_EXP_MON_RD_PV; i<=LAST_EXP_MON_RD_PV; i++)
     {
         pv_subscribe(i);
     }
-    //printf("[%s]: TSEN has %ld elements\n", ca_element_count(pv[PV_TSEN].my_chid)); 
 
-    exp_mon_thread_ready = 1;
+    atomic_store(&exp_mon_thread_ready, 1);
 
     log("exp_mon_thread initialization finished.\n");
     log("monitoring PV changes...\n");
