@@ -5,7 +5,7 @@
     <Sys>det</Sys>
   </macros>
   <width>1300</width>
-  <height>700</height>
+  <height>740</height>
   <background_color>
     <color red="240" green="240" blue="240">
     </color>
@@ -80,7 +80,7 @@
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
             <text>STOP</text>
             <x>648</x>
-            <y>444</y>
+            <y>480</y>
             <width>110</width>
             <height>70</height>
             <background_color>
@@ -146,7 +146,7 @@
             <name>Auto time</name>
             <pv_name>$(Sys)$(Dev).TP1</pv_name>
             <x>102</x>
-            <y>200</y>
+            <y>235</y>
             <height>25</height>
             <background_color>
               <color red="255" green="255" blue="255">
@@ -181,7 +181,7 @@
             <name>Label_1</name>
             <text>Auto time</text>
             <x>16</x>
-            <y>200</y>
+            <y>235</y>
             <width>80</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -228,7 +228,7 @@
             <name>Text Input</name>
             <pv_name>$(Sys)$(Dev).RUNNO</pv_name>
             <x>102</x>
-            <y>235</y>
+            <y>270</y>
             <height>25</height>
             <background_color>
               <color red="255" green="255" blue="255">
@@ -247,7 +247,7 @@
             <name>Label_4</name>
             <text>Run No.</text>
             <x>16</x>
-            <y>235</y>
+            <y>270</y>
             <width>80</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -319,7 +319,7 @@
             <name>Menu Button_2</name>
             <pv_name>$(Sys)$(Dev).GMON</pv_name>
             <x>102</x>
-            <y>309</y>
+            <y>345</y>
             <height>40</height>
             <background_color>
               <color red="240" green="240" blue="240">
@@ -331,7 +331,7 @@
             <name>Label_9</name>
             <text>Monitor fn.</text>
             <x>16</x>
-            <y>319</y>
+            <y>345</y>
             <width>80</width>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
@@ -346,7 +346,7 @@
             <name>Text Update</name>
             <pv_name>$(Sys)$(Dev):Temp1</pv_name>
             <x>124</x>
-            <y>567</y>
+            <y>600</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -371,7 +371,7 @@
             <name>Text Update_1</name>
             <pv_name>$(Sys)$(Dev):Temp2</pv_name>
             <x>274</x>
-            <y>567</y>
+            <y>600</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -396,7 +396,7 @@
             <name>Text Update_2</name>
             <pv_name>$(Sys)$(Dev):Temp3</pv_name>
             <x>424</x>
-            <y>567</y>
+            <y>600</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -421,7 +421,7 @@
             <name>Text Update_3</name>
             <pv_name>$(Sys)$(Dev):ztmp</pv_name>
             <x>574</x>
-            <y>567</y>
+            <y>600</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135" alpha="254">
@@ -447,7 +447,7 @@
             <name>Label_7</name>
             <text>Temperatures</text>
             <x>16</x>
-            <y>567</y>
+            <y>600</y>
             <width>106</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -463,7 +463,7 @@
             <name>Label_8</name>
             <text>CPU</text>
             <x>574</x>
-            <y>543</y>
+            <y>580</y>
             <height>25</height>
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
@@ -633,8 +633,8 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_22</name>
             <pv_name>$(Sys)$(Dev):RUNNO_RBV</pv_name>
-            <x>208</x>
-            <y>235</y>
+            <x>202</x>
+            <y>270</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135">
@@ -661,7 +661,7 @@
             <x>318</x>
             <y>13</y>
             <width>465</width>
-            <height>386</height>
+            <height>420</height>
             <background_color>
               <color name="Transparent" red="255" green="255" blue="255" alpha="0">
               </color>
@@ -721,7 +721,7 @@
             <name>Text Update_28</name>
             <pv_name>$(Sys)$(Dev):IPADDR_RBV</pv_name>
             <x>138</x>
-            <y>436</y>
+            <y>470</y>
             <width>154</width>
             <height>25</height>
             <foreground_color>
@@ -747,7 +747,7 @@
             <name>Text Input_2</name>
             <pv_name>$(Sys)$(Dev).IPADDR</pv_name>
             <x>140</x>
-            <y>408</y>
+            <y>445</y>
             <width>154</width>
             <height>25</height>
             <background_color>
@@ -767,7 +767,7 @@
             <name>Label_12</name>
             <text>IP address (UDP)</text>
             <x>16</x>
-            <y>408</y>
+            <y>445</y>
             <width>120</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -782,7 +782,7 @@
             <name>Label_28</name>
             <text>Filesize</text>
             <x>16</x>
-            <y>270</y>
+            <y>305</y>
             <width>80</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -798,7 +798,7 @@
             <name>Text Input_4</name>
             <pv_name>$(Sys)$(Dev):FSIZ</pv_name>
             <x>102</x>
-            <y>270</y>
+            <y>305</y>
             <height>25</height>
             <background_color>
               <color red="255" green="255" blue="255">
@@ -816,8 +816,8 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_21</name>
             <pv_name>$(Sys)$(Dev):FSIZ_RBV</pv_name>
-            <x>208</x>
-            <y>270</y>
+            <x>202</x>
+            <y>305</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135">
@@ -850,7 +850,7 @@
             <pv_name>$(Sys)$(Dev).CNT</pv_name>
             <text>COUNT</text>
             <x>648</x>
-            <y>444</y>
+            <y>480</y>
             <width>110</width>
             <height>70</height>
             <background_color>
@@ -873,7 +873,7 @@
             <name>Spinner_2</name>
             <pv_name>$(Sys)$(Dev).MONCH</pv_name>
             <x>102</x>
-            <y>359</y>
+            <y>395</y>
             <height>25</height>
             <format>0</format>
             <background_color>
@@ -890,11 +890,10 @@
           <widget type="label" version="2.0.0">
             <name>Label_61</name>
             <text>Chan</text>
-            <x>40</x>
-            <y>359</y>
-            <width>80</width>
+            <x>50</x>
+            <y>395</y>
+            <width>50</width>
             <height>25</height>
-            <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
             <actions>
             </actions>
@@ -906,8 +905,8 @@
           <widget type="textupdate" version="2.0.0">
             <name>Text Update_4</name>
             <pv_name>$(Sys)$(Dev):TIME_LEFT</pv_name>
-            <x>208</x>
-            <y>165</y>
+            <x>202</x>
+            <y>200</y>
             <height>25</height>
             <foreground_color>
               <color red="32" green="74" blue="135">
@@ -920,7 +919,7 @@
             <name>Label_10</name>
             <text>Data FIlename</text>
             <x>16</x>
-            <y>486</y>
+            <y>520</y>
             <width>164</width>
             <height>25</height>
             <vertical_alignment>1</vertical_alignment>
@@ -935,7 +934,7 @@
             <name>Text Input_3</name>
             <pv_name>$(Sys)$(Dev).FNAM</pv_name>
             <x>140</x>
-            <y>486</y>
+            <y>520</y>
             <width>440</width>
             <height>25</height>
             <background_color>
@@ -955,7 +954,7 @@
             <name>Text Update_23</name>
             <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
             <x>140</x>
-            <y>514</y>
+            <y>550</y>
             <width>440</width>
             <height>25</height>
             <foreground_color>
@@ -982,7 +981,7 @@
             <pv_name>$(Sys)$(Dev):ONLINE</pv_name>
             <bit>0</bit>
             <x>388</x>
-            <y>436</y>
+            <y>470</y>
             <width>24</width>
             <height>22</height>
             <off_color>
@@ -1010,7 +1009,7 @@
             <name>Label_13</name>
             <text>UDP Ready</text>
             <x>348</x>
-            <y>408</y>
+            <y>445</y>
             <height>25</height>
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
@@ -1026,7 +1025,7 @@
             <name>Label_14</name>
             <text>HV Bias</text>
             <x>478</x>
-            <y>408</y>
+            <y>445</y>
             <width>90</width>
             <height>25</height>
             <horizontal_alignment>1</horizontal_alignment>
@@ -1043,7 +1042,7 @@
             <name>Text Update_13</name>
             <pv_name>$(Sys)$(Dev):HV_RBV</pv_name>
             <x>478</x>
-            <y>436</y>
+            <y>470</y>
             <width>90</width>
             <height>25</height>
             <foreground_color>
@@ -1053,6 +1052,34 @@
             <horizontal_alignment>1</horizontal_alignment>
             <vertical_alignment>1</vertical_alignment>
             <wrap_words>false</wrap_words>
+            <actions>
+            </actions>
+            <border_color>
+              <color red="0" green="128" blue="255">
+              </color>
+            </border_color>
+          </widget>
+          <widget type="textupdate" version="2.0.0">
+            <name>Text Update_5</name>
+            <pv_name>$(Sys)$(Dev):TIME_ELAPSED</pv_name>
+            <x>102</x>
+            <y>200</y>
+            <height>25</height>
+            <foreground_color>
+              <color red="32" green="74" blue="135">
+              </color>
+            </foreground_color>
+            <horizontal_alignment>1</horizontal_alignment>
+            <vertical_alignment>1</vertical_alignment>
+          </widget>
+          <widget type="label" version="2.0.0">
+            <name>Label_62</name>
+            <text>Timer</text>
+            <x>50</x>
+            <y>200</y>
+            <width>50</width>
+            <height>25</height>
+            <vertical_alignment>1</vertical_alignment>
             <actions>
             </actions>
             <border_color>
@@ -2327,12 +2354,11 @@ $(pv_value)</tooltip>
     <x>30</x>
     <y>80</y>
     <width>1240</width>
-    <height>620</height>
+    <height>666</height>
     <background_color>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
-    <active_tab>1</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>

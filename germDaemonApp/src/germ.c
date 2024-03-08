@@ -162,7 +162,7 @@ void lock_buff_write(uint8_t idx, char check_val, const char* caller)
             break;
         }
         pthread_mutex_unlock(&packet_buff[idx].mutex);
-        err("%s - buff[%d] hasn't been read\n", caller, idx);
+        warn("%s - buff[%d] hasn't been read\n", caller, idx);
         pthread_yield();
     }
     log("%s - buff[%d] locked\n", caller, idx);

@@ -7,6 +7,7 @@
 
 < unique.cmd
 
+
 epicsEnvSet("NELM_MCA_GERM384", "1572864")
 epicsEnvSet("NELM_TDC_GERM384", "393216")
 epicsEnvSet("NELM_MCA_GERM192", "786432")
@@ -29,4 +30,4 @@ iocInit()
 
 dbl
 
-dbpf $(SYS)$(DEV):TMP_DATAFILE_DIR /data/ramdisk
+# dbpf $(SYS)$(DEV):TMP_DATAFILE_DIR /data/ramdisk

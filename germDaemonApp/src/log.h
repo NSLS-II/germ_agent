@@ -53,8 +53,20 @@
                         struct tm * timeinfo;                                           \
                         time( &raw_time);                                               \
                         timeinfo = localtime( &raw_time );                              \
-                        strcpy(_str_ptr_, "ERROR @%s    [%s]: ");                          \
+                        strcpy(_str_ptr_, "ERROR: @%s    [%s]: ");                      \
                         strcat(_str_ptr_, a);                                           \
                         printf(_str_ptr_, asctime(timeinfo), __func__, ##__VA_ARGS__);  \
                         free(_str_ptr_);                            }
+
+#define warn(a, ...)   { char* _str_ptr_ = malloc(strlen(a)+100);                        \
+                         time_t raw_time;                                                \
+                         struct tm * timeinfo;                                           \
+                         time( &raw_time);                                               \
+                         timeinfo = localtime( &raw_time );                              \
+                         strcpy(_str_ptr_, "WARNING: @%s    [%s]: ");                    \
+                         strcat(_str_ptr_, a);                                           \
+                         printf(_str_ptr_, asctime(timeinfo), __func__, ##__VA_ARGS__);  \
+                         free(_str_ptr_);                            }
+
+
 #endif

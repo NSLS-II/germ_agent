@@ -122,8 +122,8 @@ gige_reg_t *gige_reg_init(uint16_t reb_id, char *iface)
     
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s", gige_ip_addr); /*GIGE_CLIENT_IP);*/
-    log("gige_ip_addr = %s\n", gige_ip_addr);
-    log("init with IP address %s\n", ret->client_ip_addr);
+    info("gige_ip_addr = %s\n", gige_ip_addr);
+    info("init with IP address %s\n", ret->client_ip_addr);
     
     // Recv socket
     ret->sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -331,8 +331,8 @@ gige_data_t *gige_data_init(uint16_t reb_id, char *iface)
     
     // IP Address based off of ID
     sprintf(ret->client_ip_addr, "%s", gige_ip_addr); /*GIGE_CLIENT_IP);*/ 
-    log("gige_ip_addr = %s\n", gige_ip_addr);
-    log("init with IP address %s\n", ret->client_ip_addr);    
+    info("gige_ip_addr = %s\n", gige_ip_addr);
+    info("init with IP address %s\n", ret->client_ip_addr);    
 
     // Recv socket
     ret->sock = socket(AF_INET, SOCK_DGRAM, 0);
