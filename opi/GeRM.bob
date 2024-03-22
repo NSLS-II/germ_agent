@@ -680,10 +680,10 @@ $(pv_value)</tooltip>
           <widget type="image" version="2.0.0">
             <name>Time spectra</name>
             <pv_name>$(Sys)$(Dev).TDC</pv_name>
-            <x>29</x>
-            <y>25</y>
-            <width>849</width>
-            <height>773</height>
+            <x>30</x>
+            <y>486</y>
+            <width>877</width>
+            <height>420</height>
             <background_color>
               <color name="Transparent" red="255" green="255" blue="255" alpha="0">
               </color>
@@ -1042,6 +1042,69 @@ $(pv_value)</tooltip>
                 </color>
               </border_color>
             </widget>
+          </widget>
+          <widget type="image" version="2.0.0">
+            <name>Spectra_4</name>
+            <pv_name>$(Sys)$(Dev).MCA</pv_name>
+            <x>30</x>
+            <y>26</y>
+            <width>877</width>
+            <height>420</height>
+            <background_color>
+              <color name="Transparent" red="255" green="255" blue="255" alpha="0">
+              </color>
+            </background_color>
+            <show_toolbar>true</show_toolbar>
+            <color_map>
+              <name>JET</name>
+            </color_map>
+            <color_bar>
+              <visible>false</visible>
+              <bar_size>40</bar_size>
+              <scale_font>
+                <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                </font>
+              </scale_font>
+            </color_bar>
+            <x_axis>
+              <visible>true</visible>
+              <title>Energy</title>
+              <minimum>0.0</minimum>
+              <maximum>4095.0</maximum>
+              <title_font>
+                <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                </font>
+              </title_font>
+              <scale_font>
+                <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                </font>
+              </scale_font>
+            </x_axis>
+            <y_axis>
+              <visible>true</visible>
+              <title>Channel Number</title>
+              <minimum>$(NELM)</minimum>
+              <maximum>0.0</maximum>
+              <title_font>
+                <font name="Default Bold" family="Liberation Sans" style="BOLD" size="14.0">
+                </font>
+              </title_font>
+              <scale_font>
+                <font name="Default" family="Liberation Sans" style="REGULAR" size="14.0">
+                </font>
+              </scale_font>
+            </y_axis>
+            <actions>
+            </actions>
+            <border_alarm_sensitive>false</border_alarm_sensitive>
+            <data_width>4096</data_width>
+            <data_height>$(NELM)</data_height>
+            <unsigned>true</unsigned>
+            <log_scale>true</log_scale>
+            <maximum>2000.0</maximum>
+            <x_pv>$(Sys)$(Dev).CURSX</x_pv>
+            <y_pv>$(Sys)$(Dev).CURSY</y_pv>
+            <cursor_crosshair>true</cursor_crosshair>
           </widget>
         </children>
       </tab>
