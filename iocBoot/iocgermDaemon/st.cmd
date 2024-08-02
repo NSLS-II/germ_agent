@@ -5,7 +5,7 @@
 
 < envPaths
 
-< unique.cmd
+< lab-env.cmd
 
 
 epicsEnvSet("NELM_MCA_GERM384", "1572864")

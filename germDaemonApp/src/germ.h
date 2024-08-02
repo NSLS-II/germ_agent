@@ -10,7 +10,7 @@
 #include "log.h"
 
 #define RETRY_ON_FAILURE  5
-#define MAX_FILENAME_LEN  128
+#define MAX_FILENAME_LEN  255
 #define PREFIX_CFG_FILE  "prefix.cfg"
 
 

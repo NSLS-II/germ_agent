@@ -9,7 +9,14 @@ record(stringin, "$(Sys)$(Dev):DATAFILE_DIR") {
 record(stringin, "$(Sys)$(Dev):TMP_DATAFILE_DIR") {
 }
 
-record(stringin, "$(Sys)$(Dev):FNAM_RBV") {
+record(waveform, "$(Sys)$(Dev):FNAM") {
+    field(FTVL, "CHAR")
+    field(NELM, 256)
+}
+
+record(waveform, "$(Sys)$(Dev):FNAM_RBV") {
+    field(FTVL, "CHAR")
+    field(NELM, 256)
 }
 
 record(longin, "$(Sys)$(Dev):FSIZ") {

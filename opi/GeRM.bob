@@ -1587,6 +1587,7 @@ $(actions)</tooltip>
                 <color red="255" green="255" blue="255">
                 </color>
               </background_color>
+              <format>6</format>
               <horizontal_alignment>2</horizontal_alignment>
               <actions>
               </actions>
@@ -1612,6 +1613,7 @@ $(actions)</tooltip>
                 </color>
               </background_color>
               <transparent>true</transparent>
+              <format>6</format>
               <horizontal_alignment>2</horizontal_alignment>
               <vertical_alignment>1</vertical_alignment>
               <wrap_words>false</wrap_words>
@@ -2490,6 +2492,7 @@ $(actions)</tooltip>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
+    <active_tab>1</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>
