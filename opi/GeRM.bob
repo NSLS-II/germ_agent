@@ -1578,7 +1578,7 @@ $(actions)</tooltip>
             </widget>
             <widget type="textentry" version="3.0.0">
               <name>Text Input_8</name>
-              <pv_name>$(Sys)$(Dev).FNAM</pv_name>
+              <pv_name>$(Sys)$(Dev):FNAM.VAL$</pv_name>
               <x>131</x>
               <y>52</y>
               <width>540</width>
@@ -1599,7 +1599,7 @@ $(actions)</tooltip>
             </widget>
             <widget type="textupdate" version="2.0.0">
               <name>Text Update_32</name>
-              <pv_name>$(Sys)$(Dev):FNAM_RBV</pv_name>
+              <pv_name>$(Sys)$(Dev):FNAM_RBV.VAL$</pv_name>
               <x>131</x>
               <y>82</y>
               <width>540</width>
@@ -2492,7 +2492,7 @@ $(actions)</tooltip>
       <color red="240" green="240" blue="240">
       </color>
     </background_color>
-    <active_tab>1</active_tab>
+    <active_tab>2</active_tab>
     <tab_height>10</tab_height>
     <actions>
     </actions>

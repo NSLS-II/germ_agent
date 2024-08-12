@@ -250,8 +250,10 @@ int pv_array_init(void)
     memcpy(pv_suffix[PV_COUNT],            ".CNT",                 4);
     memcpy(pv_suffix[PV_TMP_DATAFILE_DIR], ":TMP_DATAFILE_DIR",   17);
     memcpy(pv_suffix[PV_DATAFILE_DIR],     ":DATAFILE_DIR",       13);
-    memcpy(pv_suffix[PV_FILENAME],         ".FNAM",                5);
-    memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV",            9);
+    //memcpy(pv_suffix[PV_FILENAME],         ".FNAM",                5);
+    //memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV",            9);
+    memcpy(pv_suffix[PV_FILENAME],         ":FNAM.VAL$",          10);
+    memcpy(pv_suffix[PV_FILENAME_RBV],     ":FNAM_RBV.VAL$",      14);
     memcpy(pv_suffix[PV_FILESIZE],         ":FSIZ",                5);
     memcpy(pv_suffix[PV_FILESIZE_RBV],     ":FSIZ_RBV",            9);
     memcpy(pv_suffix[PV_RUNNO],            ".RUNNO",               6);
@@ -274,8 +276,10 @@ int pv_array_init(void)
     memcpy(pv_suffix[PV_CHEN_CTRL],        ":CHEN_CTRL",          10);
     memcpy(pv_suffix[PV_TSEN],             ".TSEN",                5);
     memcpy(pv_suffix[PV_CHEN],             ".CHEN",                5);
-    memcpy(pv_suffix[PV_DATA_FILENAME],    ":DATA_FILENAME",      14);
-    memcpy(pv_suffix[PV_SPEC_FILENAME],    ":SPEC_FILENAME",      14);
+    //memcpy(pv_suffix[PV_DATA_FILENAME],    ":DATA_FILENAME",      14);
+    //memcpy(pv_suffix[PV_SPEC_FILENAME],    ":SPEC_FILENAME",      14);
+    memcpy(pv_suffix[PV_DATA_FILENAME],    ":DATA_FILENAME.VAL$", 19);
+    memcpy(pv_suffix[PV_SPEC_FILENAME],    ":SPEC_FILENAME.VAL$", 19);
 
     //--------------------------------------------------
     // PV name assembly
@@ -333,8 +337,10 @@ int pv_array_init(void)
     pv[PV_COUNT].my_dtype            = DBR_CHAR;
     pv[PV_TMP_DATAFILE_DIR].my_dtype = DBR_STRING;
     pv[PV_DATAFILE_DIR].my_dtype     = DBR_STRING;
-    pv[PV_FILENAME].my_dtype         = DBR_STRING;
-    pv[PV_FILENAME_RBV].my_dtype     = DBR_STRING;
+    pv[PV_FILENAME].my_dtype         = DBR_CHAR;
+    pv[PV_FILENAME_RBV].my_dtype     = DBR_CHAR;
+    //pv[PV_FILENAME].my_dtype         = DBR_STRING;
+    //pv[PV_FILENAME_RBV].my_dtype     = DBR_STRING;
     pv[PV_FILESIZE].my_dtype         = DBR_LONG;
     pv[PV_FILESIZE_RBV].my_dtype     = DBR_LONG;
     pv[PV_RUNNO].my_dtype            = DBR_LONG;
@@ -357,8 +363,10 @@ int pv_array_init(void)
     pv[PV_CHEN_CTRL].my_dtype        = DBR_CHAR;
     pv[PV_TSEN].my_dtype             = DBR_CHAR;
     pv[PV_CHEN].my_dtype             = DBR_CHAR;
-    pv[PV_DATA_FILENAME].my_dtype    = DBR_STRING;
-    pv[PV_SPEC_FILENAME].my_dtype    = DBR_STRING;
+    pv[PV_DATA_FILENAME].my_dtype    = DBR_CHAR;
+    pv[PV_SPEC_FILENAME].my_dtype    = DBR_CHAR;
+    //pv[PV_DATA_FILENAME].my_dtype    = DBR_STRING;
+    //pv[PV_SPEC_FILENAME].my_dtype    = DBR_STRING;
    
     return 0;
 }

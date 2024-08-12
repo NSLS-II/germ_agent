@@ -235,7 +235,7 @@ void pv_update(struct event_handler_args eha)
         write_protected_string((char*)eha.dbr, filename, MAX_FILENAME_LEN, &filename_lock);
         read_protected_string(filename, str, MAX_FILENAME_LEN, &filename_lock);
         info("new filename is %s\n", str);
-        pv_put(PV_FILENAME_RBV);
+        pvs_put(PV_FILENAME_RBV, MAX_FILENAME_LEN);
     }
     // runno
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RUNNO].my_chid))
