@@ -31,6 +31,7 @@ extern unsigned int  monch;
 extern unsigned char tsen_proc, chen_proc;
 extern unsigned char tsen_ctrl, chen_ctrl;
 extern char          tsen[MAX_NELM], chen[MAX_NELM];
+extern unsigned char restart;
 
 extern char ca_dtype[7][11];
 extern char gige_ip_addr[16];
@@ -193,6 +194,16 @@ void pv_update(struct event_handler_args eha)
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_CHEN_CTRL].my_chid))
     {
         chen_ctrl = *(char*)eha.dbr;
+    }
+    else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_RESTART].my_chid))
+    {
+        if (*(unsigned char*)eha.dbr==1)
+        {
+            printf("[%s]: IOC restarted. Exiting...\n", __func__);
+            restart = 0;
+            pv_put(PV_RESTART);
+            exit(0);
+        }
     }
     // filesize
     else if ((unsigned long)eha.chid == (unsigned long)(pv[PV_FILESIZE].my_chid))

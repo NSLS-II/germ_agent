@@ -84,6 +84,8 @@ unsigned char tsen_proc, chen_proc;
 unsigned char tsen_ctrl, chen_ctrl;
 char          tsen[MAX_NELM], chen[MAX_NELM];
 
+unsigned char restart = 0;
+
 char          gige_ip_addr[16];
 
 char          hostname[32];
@@ -276,6 +278,7 @@ int pv_array_init(void)
     memcpy(pv_suffix[PV_CHEN_CTRL],        ":CHEN_CTRL",          10);
     memcpy(pv_suffix[PV_TSEN],             ".TSEN",                5);
     memcpy(pv_suffix[PV_CHEN],             ".CHEN",                5);
+    memcpy(pv_suffix[PV_RESTART],          ":RESTART",             8);
     //memcpy(pv_suffix[PV_DATA_FILENAME],    ":DATA_FILENAME",      14);
     //memcpy(pv_suffix[PV_SPEC_FILENAME],    ":SPEC_FILENAME",      14);
     memcpy(pv_suffix[PV_DATA_FILENAME],    ":DATA_FILENAME.VAL$", 19);
@@ -328,6 +331,7 @@ int pv_array_init(void)
     pv[PV_CHEN_CTRL].my_var_p        = (void*)(&chen_ctrl);
     pv[PV_TSEN].my_var_p             = (void*)(&tsen);
     pv[PV_CHEN].my_var_p             = (void*)(&chen);
+    pv[PV_RESTART].my_var_p          = (void*)(&restart);
     pv[PV_DATA_FILENAME].my_var_p    = (void*)datafile;
     pv[PV_SPEC_FILENAME].my_var_p    = (void*)spectrafile;
 
@@ -363,6 +367,7 @@ int pv_array_init(void)
     pv[PV_CHEN_CTRL].my_dtype        = DBR_CHAR;
     pv[PV_TSEN].my_dtype             = DBR_CHAR;
     pv[PV_CHEN].my_dtype             = DBR_CHAR;
+    pv[PV_RESTART].my_dtype          = DBR_CHAR;
     pv[PV_DATA_FILENAME].my_dtype    = DBR_CHAR;
     pv[PV_SPEC_FILENAME].my_dtype    = DBR_CHAR;
     //pv[PV_DATA_FILENAME].my_dtype    = DBR_STRING;

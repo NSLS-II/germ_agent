@@ -49,50 +49,51 @@
 #define PV_CHEN_CTRL          16
 #define PV_TSEN               17
 #define PV_CHEN               18
+#define PV_RESTART            19
 // Write only
-#define PV_FILENAME_RBV       19
-#define PV_RUNNO_RBV          20
-#define PV_FILESIZE_RBV       21
-#define PV_IPADDR_RBV         22
-#define PV_NELM_RBV           23
-#define PV_MONCH_RBV          24
+#define PV_FILENAME_RBV       20
+#define PV_RUNNO_RBV          21
+#define PV_FILESIZE_RBV       22
+#define PV_IPADDR_RBV         23
+#define PV_NELM_RBV           24
+#define PV_MONCH_RBV          25
 
 //-----------------------------------------------------------
 // Read/written by data_write_thread.
 //-----------------------------------------------------------
-#define PV_DATA_FILENAME      25
+#define PV_DATA_FILENAME      26
 
 //-----------------------------------------------------------
 // Read/written by data_proc_thread.
 //-----------------------------------------------------------
-#define PV_MCA                26
-#define PV_TDC                27
-#define PV_SPEC_FILENAME      28
+#define PV_MCA                27
+#define PV_TDC                28
+#define PV_SPEC_FILENAME      29
 
 
 //===========================================================
 // Some PV related constants
 //===========================================================
 
-#define MAX_PV_NAME_LEN       64
+#define MAX_PV_NAME_LEN      256
 #define MAX_NELM             384
 
-#define NUM_PVS               29
+#define NUM_PVS               30
 
 #define FIRST_MAIN_PV          0
 #define LAST_MAIN_PV           3
 
 #define FIRST_EXP_MON_PV       4
-#define LAST_EXP_MON_PV       24
+#define LAST_EXP_MON_PV       25
 
 #define FIRST_EXP_MON_RD_PV    4
-#define LAST_EXP_MON_RD_PV    18
+#define LAST_EXP_MON_RD_PV    19
 
-#define FIRST_DATA_WRITE_PV   25
-#define LAST_DATA_WRITE_PV    25
+#define FIRST_DATA_WRITE_PV   26
+#define LAST_DATA_WRITE_PV    26
 
-#define FIRST_DATA_PROC_PV    26
-#define LAST_DATA_PROC_PV     28
+#define FIRST_DATA_PROC_PV    27
+#define LAST_DATA_PROC_PV     29
 
 #define FIRST_ENV_PV          PV_PID
 #define LAST_ENV_PV           PV_DIR
