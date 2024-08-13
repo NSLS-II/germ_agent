@@ -1,5 +1,3 @@
 #!/bin/bash
 
-
-cd iocBoot/iocgermDaemon/
-./st.cmd
+bin/linux-x86_64/germ_daemon
